@@ -1,10 +1,13 @@
 use nom::{be_u16, be_u32};
 use num_traits::FromPrimitive;
 
+
+
 // TODO: Use to verify font tables
 #[allow(dead_code)]
 fn table_check_sum(table: &[u32]) -> u32 {
     table.iter().sum()
+    // C version
     // uint32 CalcTableChecksum(uint32 *table, uint32 numberOfBytesInTable) {
     //     uint32 sum = 0;
     //     uint32 nLongs = (numberOfBytesInTable + 3) / 4;
@@ -27,11 +30,86 @@ fn parse_offsets(font_buf: &[u8]) {
     // println!("fd = {:#?}", fd);
     // let off = parse_offset_subtable(font_buf);
     // let st = off.and_then(|inp| table_directory_entry(inp.0));
-    let st = parse_font_directory(font_buf);
-    match st {
-        Ok(val) => println!("ok {:#?}", val.1),
-        Err(e) => println!("err {:?}", e),
-    };
+
+    // let st = parse_font_directory(font_buf);
+    // match st {
+    //     Ok(val) => println!("ok {:#?}", val.1),
+    //     Err(e) => println!("err {:?}", e),
+    // };
+
+    // FIXME: WILL BLOW UP, just for debug
+    // tables::tables_parse::parse_name_table(font_buf);
+    // tables::tables_parse::parse_name_record(font_buf, 0);
+}
+
+// Should be its own file
+mod tables {
+    use super::TableTag;
+
+    struct NameTable {
+        format: u16, // Constant `0`
+        count: u16,
+        string_offset: u16,
+        records: Vec<NameRecord>,
+    }
+    struct NameRecord {
+        platform_id: u16,
+        platform_specific_id: u16,
+        language_id: u16,
+        name_id: u16,
+        length: u16,
+        offset: u16,
+        name: String,
+    }
+    mod tables_parse {
+        use super::*;
+        use nom::{be_u16, IResult, Offset};
+
+
+        fn parse_name_table(i: &[u8]) -> IResult<&[u8], NameTable> {
+            named!(partial_table<(u16, u16, u16)>,
+               do_parse!(
+                   format: verify!(be_u16, |val| val == 0) >>
+                   count: be_u16 >>
+                   string_offset: be_u16 >>
+                   ((format, count, string_offset))
+               )
+            );
+
+            let (i1, (format, count, string_offset)) = try_parse!(i, partial_table);
+
+            let eaten = i.offset(i1);
+            let new_offset = (string_offset as usize - eaten) as u16;
+            let (i2, records) = try_parse!(i1, apply!(parse_name_records, count, new_offset));
+            let nt = NameTable {
+                format, count, string_offset, records
+            };
+            Ok((i2, nt))
+        }
+
+        fn parse_name_records(i: &[u8], count: u16, names_start: u16) -> IResult<&[u8], Vec<NameRecord>> {
+            unimplemented!()
+        }
+        fn parse_name_record(i: &[u8], names_start: u16) -> IResult<&[u8], NameRecord> {
+            named!(partial_record<(u16, u16, u16, u16, u16, u16)>,
+                do_parse!(
+                    platform_id: be_u16 >>
+                    platform_specific_id: be_u16 >>
+                    language_id: be_u16 >>
+                    name_id: be_u16 >>
+                    length: be_u16 >>
+                    offset: be_u16 >>
+                    ((platform_id, platform_specific_id, language_id, name_id, length, offset))
+                )
+            );
+
+            let (i1, (platform_id, platform_specific_id, language_id,
+                 name_id, length, offset)) = try_parse!(i, partial_record);
+
+            let offset_to_name = 0; // TODO
+            unimplemented!()
+        }
+    }
 }
 
 #[derive(Debug)]
