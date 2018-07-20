@@ -1,0 +1,10 @@
+[package]
+name = "toy_ttf"
+version = "0.1.0"
+authors = ["AdnoC <adam.r.cutler@gmail.com>"]
+
+[dependencies]
+nom = "4.0"
+
+[dev-dependencies]
+byte_conv = "0.1"
