@@ -87,9 +87,23 @@ mod tables {
         }
 
         fn parse_name_records(i: &[u8], count: u16, names_start: u16) -> IResult<&[u8], Vec<NameRecord>> {
-            unimplemented!()
+            let mut records = Vec::with_capacity(count as usize);
+            let mut furthest = i;
+            let mut next_pos = i;
+            for _ in 0..count {
+                let eaten = i.offset(next_pos) as u16;
+                let names_start = names_start - eaten;
+                let (post_name, (post_record, nr)) = try_parse!(next_pos, apply!(parse_name_record, names_start));
+
+                records.push(nr);
+                next_pos = post_record;
+                if i.offset(furthest) < i.offset(post_name) {
+                    furthest = post_name;
+                }
+            }
+            Ok((furthest, records))
         }
-        fn parse_name_record(i: &[u8], names_start: u16) -> IResult<&[u8], NameRecord> {
+        fn parse_name_record(i: &[u8], names_start: u16) -> IResult<&[u8], (&[u8], NameRecord)> {
             named!(partial_record<(u16, u16, u16, u16, u16, u16)>,
                 do_parse!(
                     platform_id: be_u16 >>
@@ -121,7 +135,7 @@ mod tables {
                 offset,
                 name,
             };
-            Ok((i3, nr))
+            Ok((i3, (i3, nr)))
         }
     }
 }
