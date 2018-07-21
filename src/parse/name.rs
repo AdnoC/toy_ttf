@@ -69,10 +69,8 @@ fn parse_name_record(i: &[u8], names_start: u16) -> IResult<&[u8], (&[u8], NameR
         0 => try_parse!(i3, expr_res!(NameString::new_unicode_from_raw(name))),
         3 => try_parse!(i3, expr_res!(NameString::new_microsoft_from_raw(name))),
         _ => try_parse!(i3, value!(NameString::new_other_from_raw(name))),
+        // 1 should be MacOSRoman encoding?
     };
-
-    // FIXME: name isn't always unicode. Could be Microsoft encoding
-    // (https://hexapdf.gettalong.org/api/HexaPDF/Font/TrueType/Table/Name/Record.html)
 
     let nr = NameRecord {
         platform_id,
