@@ -25,7 +25,9 @@ pub fn load_font(font_buf: &[u8]) {
 }
 
 fn parse_offsets(font_buf: &[u8]) {
-    let font_buf = &font_buf[0..1024];
+    test_parse(font_buf).unwrap();
+    // let font_buf = &font_buf[0..1024];
+
     // let fd = parse_font_directory(font_buf).unwrap();
     // println!("fd = {:#?}", fd);
     // let off = parse_offset_subtable(font_buf);
@@ -42,17 +44,37 @@ fn parse_offsets(font_buf: &[u8]) {
     // tables::tables_parse::parse_name_record(font_buf, 0);
 }
 
+fn test_parse(i: &[u8]) -> ::nom::IResult<&[u8], ()> {
+    use nom::Offset;
+    let (i1, fd) = try_parse!(i, parse_font_directory);
+    let eaten = i.offset(i1);
+    let name_offset = fd.table_dirs.0.iter()
+        .find(|tdr| tdr.tag == TableTag::Name)
+        .map(|tdr| tdr.offset)
+        .unwrap();
+
+    let name_offset = name_offset - eaten as u32;
+    let (i_name, _) = try_parse!(i1, take!(name_offset));
+    let (i_fin, nt) = try_parse!(i_name, tables::tables_parse::parse_name_table);
+
+    println!("name_table = {:#?}", nt);
+
+    Ok((i_fin, ()))
+}
+
 // Should be its own file
 mod tables {
     use super::TableTag;
 
-    struct NameTable {
+    #[derive(Debug)]
+    pub struct NameTable {
         format: u16, // Constant `0`
         count: u16,
         string_offset: u16,
         records: Vec<NameRecord>,
     }
-    struct NameRecord {
+    #[derive(Debug)]
+    pub struct NameRecord {
         platform_id: u16,
         platform_specific_id: u16,
         language_id: u16,
@@ -61,11 +83,11 @@ mod tables {
         offset: u16,
         name: String,
     }
-    mod tables_parse {
+    pub mod tables_parse {
         use super::*;
         use nom::{be_u16, IResult, Offset};
 
-        fn parse_name_table(i: &[u8]) -> IResult<&[u8], NameTable> {
+        pub fn parse_name_table(i: &[u8]) -> IResult<&[u8], NameTable> {
             named!(partial_table<(u16, u16, u16)>,
                do_parse!(
                    format: verify!(be_u16, |val| val == 0) >>
@@ -78,6 +100,7 @@ mod tables {
             let (i1, (format, count, string_offset)) = try_parse!(i, partial_table);
 
             let eaten = i.offset(i1);
+                println!("eaten = {}", eaten);
             let new_offset = (string_offset as usize - eaten) as u16;
             let (i2, records) = try_parse!(i1, apply!(parse_name_records, count, new_offset));
             let nt = NameTable {
@@ -93,6 +116,7 @@ mod tables {
             let mut next_pos = i;
             for _ in 0..count {
                 let eaten = i.offset(next_pos) as u16;
+                println!("eaten = {}", eaten);
                 let names_start = names_start - eaten;
                 let (post_name, (post_record, nr)) = try_parse!(next_pos, apply!(parse_name_record, names_start));
 
@@ -127,6 +151,9 @@ mod tables {
             let (i3, name) = try_parse!(i2, recognize!(take!(length)));
             let (i3, name) = try_parse!(i3, expr_res!(::std::str::from_utf8(name)));
             let name = name.to_string();
+            // FIXME: name isn't always unicode. Could be Microsoft encoding
+            // (https://hexapdf.gettalong.org/api/HexaPDF/Font/TrueType/Table/Name/Record.html)
+            // let name = String::from_utf8_lossy(name).to_string();
             
             let nr = NameRecord {
                 platform_id,
@@ -137,7 +164,7 @@ mod tables {
                 offset,
                 name,
             };
-            Ok((i3, (i3, nr)))
+            Ok((i3, (i1, nr)))
         }
     }
 }
@@ -209,7 +236,7 @@ macro_rules! u32_code {
 
 // Varius tags: http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=IWS-AppendixC
 #[repr(u32)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, FromPrimitive, PartialEq, Eq)]
 enum TableTag {
     // Required
     Name = u32_code!(b"name"),
