@@ -25,7 +25,7 @@ pub fn load_font(font_buf: &[u8]) {
 }
 
 fn parse_offsets(font_buf: &[u8]) {
-    test_parse(font_buf).unwrap();
+    test_parse(font_buf).expect("Test parse failed");
     // let font_buf = &font_buf[0..1024];
 
     // let fd = parse_font_directory(font_buf).unwrap();
@@ -51,7 +51,7 @@ fn test_parse(i: &[u8]) -> ::nom::IResult<&[u8], ()> {
     let name_offset = fd.table_dirs.0.iter()
         .find(|tdr| tdr.tag == TableTag::Name)
         .map(|tdr| tdr.offset)
-        .unwrap();
+        .expect("Coulnd't find name table");
 
     let name_offset = name_offset - eaten as u32;
     let (i_name, _) = try_parse!(i1, take!(name_offset));
@@ -65,6 +65,69 @@ fn test_parse(i: &[u8]) -> ::nom::IResult<&[u8], ()> {
 // Should be its own file
 mod tables {
     use super::TableTag;
+    use widestring::WideString;
+    use std::str::Utf8Error;
+    use byte_slice_cast::{AsSliceOf, Error};
+
+    // FIXME: Should be put somewhere more sensible
+    // TODO: Should hold reference to the string
+    enum NameString {
+        Unicode(String),
+        Microsoft(WideString),
+        Other(Vec<u8>)
+    }
+    impl ::std::fmt::Debug for NameString {
+        fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+            use self::NameString::*;
+            match self {
+                Unicode(name) => f.debug_tuple("Unicode").field(name).finish(),
+                Microsoft(name) => f.debug_tuple("Microsoft").field(&name.to_string_lossy()).finish(),
+                Other(raw_name) => f.debug_tuple("Other").field(raw_name).finish()
+            }
+        }
+    }
+
+    impl NameString {
+        fn new_unicode_from_raw(s: &[u8]) -> Result<NameString, Utf8Error> {
+            // FIXME: UNICODE IS IN UTF-16 ENCODING, NOT UTF-8
+            use std::str;
+            str::from_utf8(s)
+                .map(|s| s.to_string())
+                .map(|s| NameString::Unicode(s))
+        }
+
+        fn new_microsoft_from_raw(s: &[u8]) -> Result<NameString, Error> { // TODO: Make a better error
+
+            let manual_convert = |s: &[u8]| {
+                let wchar_buf: Vec<u16> = s.chunks(2)
+                    .map(|bytes| (bytes[0], bytes[1]))
+                    .map(|(hi, lo)| (hi as u16) << 8 | lo as u16)
+                    .collect();
+                let ms_string = WideString::from_vec(wchar_buf);
+                Ok(NameString::Microsoft(ms_string))
+            };
+
+            // If we can get away with it, try just casting the slice first
+            #[cfg(target_endian = "big")]
+            {
+                if let Ok(wchar_slice) = s.as_slice_of::<u16>() {
+                    let ms_string = WideString::from_vec(wchar_slice);
+                    Ok(NameString::Microsoft(ms_string))
+                } else {
+                    manual_convert(s)
+                }
+            }
+            // If the endians don't match we will always have to manually construct
+            // the string
+            #[cfg(target_endian = "little")]
+            manual_convert(s)
+        }
+
+        fn new_other_from_raw(s: &[u8]) -> NameString {
+            let buf = s.iter().cloned().collect();
+            NameString::Other(buf)
+        }
+    }
 
     #[derive(Debug)]
     pub struct NameTable {
@@ -81,7 +144,7 @@ mod tables {
         name_id: u16,
         length: u16,
         offset: u16,
-        name: String,
+        name: NameString,
     }
     pub mod tables_parse {
         use super::*;
@@ -149,12 +212,16 @@ mod tables {
             // TODO: Make this a parser
             let (i2, _) = try_parse!(i1, take!(offset_to_name));
             let (i3, name) = try_parse!(i2, recognize!(take!(length)));
-            let (i3, name) = try_parse!(i3, expr_res!(::std::str::from_utf8(name)));
-            let name = name.to_string();
+            let (i3, name) = match platform_id {
+                2 => return Err(::nom::Err::Error(error_position!(i3, ::nom::ErrorKind::Tag))),
+                0 => try_parse!(i3, expr_res!(NameString::new_unicode_from_raw(name))),
+                3 => try_parse!(i3, expr_res!(NameString::new_microsoft_from_raw(name))),
+                _ => try_parse!(i3, value!(NameString::new_other_from_raw(name))),
+            };
+
             // FIXME: name isn't always unicode. Could be Microsoft encoding
             // (https://hexapdf.gettalong.org/api/HexaPDF/Font/TrueType/Table/Name/Record.html)
-            // let name = String::from_utf8_lossy(name).to_string();
-            
+
             let nr = NameRecord {
                 platform_id,
                 platform_specific_id,
