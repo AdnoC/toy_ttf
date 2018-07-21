@@ -86,6 +86,7 @@ mod tables {
             Ok((i2, nt))
         }
 
+        // TODO: Make a combinator out of this
         fn parse_name_records(i: &[u8], count: u16, names_start: u16) -> IResult<&[u8], Vec<NameRecord>> {
             let mut records = Vec::with_capacity(count as usize);
             let mut furthest = i;
@@ -121,6 +122,7 @@ mod tables {
 
             let eaten = i.offset(i1) as u16;
             let offset_to_name = names_start - eaten + offset;
+            // TODO: Make this a parser
             let (i2, _) = try_parse!(i1, take!(offset_to_name));
             let (i3, name) = try_parse!(i2, recognize!(take!(length)));
             let (i3, name) = try_parse!(i3, expr_res!(::std::str::from_utf8(name)));
