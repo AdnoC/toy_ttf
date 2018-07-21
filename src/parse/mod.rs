@@ -65,7 +65,6 @@ mod tables {
         use super::*;
         use nom::{be_u16, IResult, Offset};
 
-
         fn parse_name_table(i: &[u8]) -> IResult<&[u8], NameTable> {
             named!(partial_table<(u16, u16, u16)>,
                do_parse!(
@@ -106,8 +105,23 @@ mod tables {
             let (i1, (platform_id, platform_specific_id, language_id,
                  name_id, length, offset)) = try_parse!(i, partial_record);
 
-            let offset_to_name = 0; // TODO
-            unimplemented!()
+            let eaten = i.offset(i1) as u16;
+            let offset_to_name = names_start - eaten + offset;
+            let (i2, _) = try_parse!(i1, take!(offset_to_name));
+            let (i3, name) = try_parse!(i2, recognize!(take!(length)));
+            let (i3, name) = try_parse!(i3, expr_res!(::std::str::from_utf8(name)));
+            let name = name.to_string();
+            
+            let nr = NameRecord {
+                platform_id,
+                platform_specific_id,
+                language_id,
+                name_id,
+                length,
+                offset,
+                name,
+            };
+            Ok((i3, nr))
         }
     }
 }
