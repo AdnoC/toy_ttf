@@ -16,3 +16,4 @@ extern crate widestring;
 // NOTE: TrueType is big endian (from https://wiki.osdev.org/TrueType_Fonts)
 
 pub mod parse;
+pub mod tables;
