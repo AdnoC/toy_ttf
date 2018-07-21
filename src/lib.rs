@@ -1,3 +1,9 @@
+// Apple TrueType Spec
+// https://developer.apple.com/fonts/TrueType-Reference-Manual/
+
+// Microsoft OpenType Spec
+// https://docs.microsoft.com/en-us/typography/opentype/spec/otff
+
 #[cfg(test)]
 extern crate byte_conv;
 
