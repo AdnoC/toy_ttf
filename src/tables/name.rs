@@ -113,12 +113,15 @@ pub enum NameIdentifier {
     VariationsPostScriptNamePrefix = 25,
 }
 
+// When building a Unicode font for Windows, the platform ID should be 3 and the encoding ID should be 1, and the referenced string data must be encoded in UTF-16BE. When building a symbol font for Windows, the platform ID should be 3 and the encoding ID should be 0, and the referenced string data must be encoded in UTF-16BE. When building a font that will be used on the Macintosh, the platform ID should be 1 and the encoding ID should be 0.
 #[derive(Debug)]
 pub enum PlatformIdentifier {
     Unicode = 0,
     Macintosh = 1,
-    Reserved = 2,
+    /// Deprecated
+    ISO = 2,
     Microsoft = 3,
+    // Custom = 4, // Unsupported
 }
 
 #[derive(Debug)]
@@ -160,13 +163,28 @@ pub enum MacEncodingIdentifier {
 
 #[derive(Debug)]
 pub enum UnicodeEncodingIdentifier {
-    DefaultSemantics = 0,
+    Version1_0 = 0,
     Version1_1 = 1,
     Iso10646 = 2,
-    BmpVersion2_2 = 3,
-    NonBmpVersion2_2 = 4,
+    BmpVersion2_0 = 3,
+    NonBmpVersion2_0 = 4,
     VariationSequences = 5,
     Full = 6,
+}
+
+#[derive(Debug)]
+pub enum WindowsEncodingIdentifier {
+    Symbol = 0,
+    Ucs2 = 1,
+    ShiftJis = 2,
+    Prc = 3,
+    Big5 = 4,
+    Wansung = 5,
+    Johab = 6,
+    Reserved1 = 7,
+    Reserved2 = 8,
+    Reserved3 = 9,
+    Ucs4 = 10,
 }
 
 #[derive(Debug)]
@@ -289,4 +307,12 @@ pub enum MacLanguageIdentifier {
     GreekPolytonic = 148,
     Greenlandic = 149,
     AzerbaijaniRomanScript = 150,
+}
+
+pub enum WindowsLanguageIdentifier {
+    // TODO: Copy in the list (https://docs.microsoft.com/en-us/typography/opentype/spec/name)
+}
+
+pub enum IsoEncodingIdentifier {
+    // TODO: Copy in the list (https://docs.microsoft.com/en-us/typography/opentype/spec/name)
 }
