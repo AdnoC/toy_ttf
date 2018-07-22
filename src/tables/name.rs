@@ -1,7 +1,9 @@
-use tables::TableTag;
 use widestring::WideString;
 use std::str::Utf8Error;
+#[allow(unused_imports)]
 use byte_slice_cast::{AsSliceOf, Error};
+
+// TODO: Handle format 1 name tables
 
 // FIXME: Should be put somewhere more sensible
 // TODO: Should hold reference to the string
@@ -65,7 +67,7 @@ impl NameString {
 
 #[derive(Debug)]
 pub struct NameTable {
-    pub format: u16, // Constant `0`
+    // pub format: u16, // We only handle format 0
     pub count: u16,
     pub string_offset: u16,
     pub records: Vec<NameRecord>,

@@ -1,25 +1,25 @@
-use tables::TableTag;
 use tables::name::*;
 use nom::{be_u16, IResult, Offset};
 
 pub fn parse_name_table(i: &[u8]) -> IResult<&[u8], NameTable> {
-    named!(partial_table<(u16, u16, u16)>,
+    named!(partial_table<(u16, u16)>,
     do_parse!(
-        format: verify!(be_u16, |val| val == 0) >>
+        // We only handle format 0 tables
+        _format: verify!(be_u16, |val| val == 0) >>
         count: be_u16 >>
         string_offset: be_u16 >>
-        ((format, count, string_offset))
+        ((count, string_offset))
         )
     );
 
-    let (i1, (format, count, string_offset)) = try_parse!(i, partial_table);
+    let (i1, (count, string_offset)) = try_parse!(i, partial_table);
 
     let eaten = i.offset(i1);
     println!("eaten = {}", eaten);
     let new_offset = (string_offset as usize - eaten) as u16;
     let (i2, records) = try_parse!(i1, apply!(parse_name_records, count, new_offset));
     let nt = NameTable {
-        format, count, string_offset, records
+        count, string_offset, records
     };
     Ok((i2, nt))
 }
