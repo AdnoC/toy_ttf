@@ -1,4 +1,5 @@
 pub mod name;
+pub mod font_directory;
 
 // https://stackoverflow.com/questions/42199727/how-to-construct-const-integers-from-literal-byte-expressions
 #[cfg(target_endian = "big")]
