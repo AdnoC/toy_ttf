@@ -19,7 +19,7 @@ pub fn parse_name_table(i: &[u8]) -> IResult<&[u8], NameTable> {
     let new_offset = (string_offset as usize - eaten) as u16;
     let (i2, records) = try_parse!(i1, apply!(parse_name_records, count, new_offset));
     let nt = NameTable {
-        count, string_offset, records
+        string_offset, records
     };
     Ok((i2, nt))
 }

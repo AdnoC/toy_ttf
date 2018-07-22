@@ -68,7 +68,7 @@ impl NameString {
 #[derive(Debug)]
 pub struct NameTable {
     // pub format: u16, // We only handle format 0
-    pub count: u16,
+    // pub count: u16, // implied by `records.len()`
     pub string_offset: u16,
     pub records: Vec<NameRecord>,
 }
