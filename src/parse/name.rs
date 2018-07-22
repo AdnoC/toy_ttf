@@ -77,7 +77,6 @@ fn parse_name_record(i: &[u8], names_start: u16) -> IResult<&[u8], (&[u8], NameR
         platform_specific_id,
         language_id,
         name_id,
-        length,
         offset,
         name,
     };

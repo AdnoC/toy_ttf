@@ -78,7 +78,7 @@ pub struct NameRecord {
     pub platform_specific_id: u16,
     pub language_id: u16,
     pub name_id: u16,
-    pub length: u16,
+    // pub length: u16, // Implied by name.len()
     pub offset: u16,
     pub name: NameString,
 }
