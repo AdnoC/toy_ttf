@@ -5,6 +5,31 @@
 // https://docs.microsoft.com/en-us/typography/opentype/spec/otff
 
 
+// TODO: New plan
+//
+// Don't copy anything with variable length
+//
+//      All variable-length things should be accessed thgough iterators
+//
+// Don't eagerly decode strings
+//
+//      Wait for the user to request it
+//
+// All table parsers have their own failure codes
+//
+//      Should be in the form of a #[derive(FromPrimitive, ToPrimitive)] enum
+//
+// Single method to get a table of some type
+//
+//      Should return Result<SpecificType, GetTableErr>
+//
+//      GetTableErr should be enum of all specific table's error enums
+//
+//          Should also include a `TableNotFound` case
+//
+// Still use nom for parsing
+//
+//      Error conditions should be mapped to table-specific errors
 
 extern crate encoding;
 
