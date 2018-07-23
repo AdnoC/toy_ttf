@@ -9,6 +9,7 @@ num-traits = "0.2" # For num-derive
 num-derive = {version = "0.2", features = ["full-syntax"]}
 widestring = "0.3"
 byte-slice-cast = "0.2"
+encoding = "0.2"
 
 [dev-dependencies]
 byte_conv = "0.1"

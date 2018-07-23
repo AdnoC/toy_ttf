@@ -4,6 +4,10 @@
 // Microsoft OpenType Spec
 // https://docs.microsoft.com/en-us/typography/opentype/spec/otff
 
+
+
+extern crate encoding;
+
 #[cfg(test)]
 extern crate byte_conv;
 
