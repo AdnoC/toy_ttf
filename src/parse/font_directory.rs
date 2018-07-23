@@ -25,17 +25,17 @@ pub fn parse_font_directory(i: &[u8]) -> IResult<&[u8], FontDirectory> {
 
 named_args!(parse_table_directory(num_entries: u16)<TableDirectory>,
 map!(
-    count!(table_directory_entry, num_entries as usize),
+    count!(table_directory_record, num_entries as usize),
     |entries| TableDirectory(entries)
 )
 );
-named!(table_directory_entry<TableDirEntry>,
+named!(table_directory_record<TableDirRecord>,
        do_parse!(
            tag: table_tag >>
            check_sum: be_u32 >>
            offset: be_u32 >>
            length: be_u32 >>
-           (TableDirEntry { tag, check_sum, offset, length })
+           (TableDirRecord { tag, check_sum, offset, length })
        )
 );
 

@@ -25,10 +25,10 @@ pub struct TableRecords<'file> {
 // }
 
 #[derive(Debug)]
-pub struct TableDirectory(pub Vec<TableDirEntry>);
+pub struct TableDirectory(pub Vec<TableDirRecord>);
 
 #[derive(Debug)]
-pub struct TableDirEntry {
+pub struct TableDirRecord {
     pub tag: TableTag,
     pub check_sum: u32,
     pub offset: u32,
