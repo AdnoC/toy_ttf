@@ -30,6 +30,8 @@
 // Still use nom for parsing
 //
 //      Error conditions should be mapped to table-specific errors
+//
+// All tables should be bound to lifetime of file
 
 extern crate encoding;
 
