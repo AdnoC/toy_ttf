@@ -6,6 +6,24 @@ pub struct FontDirectory<'file> {
     pub table_dir_start: &'file [u8],
 }
 
+impl<'a> FontDirectory<'a> {
+    pub fn table_records(&self) -> TableRecords<'a> {
+        TableRecords {
+            next_record: self.table_dir_start,
+            num_left: self.offsets.num_tables,
+        }
+    }
+}
+
+pub struct TableRecords<'file> {
+    next_record: &'file [u8],
+    num_left: u16,
+}
+
+// impl<'a> Iterator for TableRecords<'a> {
+//     type Item = 
+// }
+
 #[derive(Debug)]
 pub struct TableDirectory(pub Vec<TableDirEntry>);
 
