@@ -1,4 +1,4 @@
-use tables::TableTag;
+use tables::{PrimaryTable, TableTag};
 
 #[derive(Debug)]
 pub struct FontDirectory<'file> {
@@ -7,6 +7,10 @@ pub struct FontDirectory<'file> {
 }
 
 impl<'a> FontDirectory<'a> {
+    pub fn table_record<T: PrimaryTable<'a>>(&self) -> Option<TableDirRecord> {
+        self.table_records()
+            .find(|record| record.tag == T::tag())
+    }
     pub fn table_records(&self) -> TableRecords<'a> {
         TableRecords {
             next_record: self.table_dir_start,
