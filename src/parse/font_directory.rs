@@ -6,7 +6,12 @@ use tables::TableTag;
 use tables::font_directory::*;
 
 pub fn parse_font_directory(i: &[u8]) -> IResult<&[u8], FontDirectory> {
-    unimplemented!()
+    let (table_dir_start, offsets) = try_parse!(i, parse_offset_subtable);
+    let font_dir = FontDirectory {
+        offsets, table_dir_start
+    };
+
+    Ok((table_dir_start, font_dir))
 }
 
 // named!(pub parse_font_directory<FontDirectory>,
