@@ -1,9 +1,9 @@
 use tables::TableTag;
 
 #[derive(Debug)]
-pub struct FontDirectory {
+pub struct FontDirectory<'file> {
     pub offsets: OffsetSubtable,
-    pub table_dirs: TableDirectory,
+    pub table_dir_start: &'file [u8],
 }
 
 #[derive(Debug)]

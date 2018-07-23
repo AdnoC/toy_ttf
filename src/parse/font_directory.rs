@@ -1,17 +1,21 @@
-use nom::{be_u16, be_u32};
+use nom::{be_u16, be_u32, IResult};
 use num_traits::FromPrimitive;
 
 
 use tables::TableTag;
 use tables::font_directory::*;
 
-named!(pub parse_font_directory<FontDirectory>,
-       do_parse!(
-           offsets: parse_offset_subtable >>
-           table_dirs: apply!(parse_table_directory, offsets.num_tables) >>
-           (FontDirectory { offsets, table_dirs })
-       )
-);
+pub fn parse_font_directory(i: &[u8]) -> IResult<&[u8], FontDirectory> {
+    unimplemented!()
+}
+
+// named!(pub parse_font_directory<FontDirectory>,
+//        do_parse!(
+//            offsets: parse_offset_subtable >>
+//            table_dirs: apply!(parse_table_directory, offsets.num_tables) >>
+//            (FontDirectory { offsets, table_dirs })
+//        )
+// );
 
 
 named_args!(parse_table_directory(num_entries: u16)<TableDirectory>,

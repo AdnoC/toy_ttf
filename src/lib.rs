@@ -54,3 +54,4 @@ extern crate widestring;
 
 pub mod parse;
 pub mod tables;
+pub mod font;

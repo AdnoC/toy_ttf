@@ -1,5 +1,5 @@
 mod name;
-mod font_directory;
+pub(crate) mod font_directory;
 
 // TODO: Use to verify font tables
 #[allow(dead_code)]
@@ -39,21 +39,23 @@ pub fn load_font(font_buf: &[u8]) {
 }
 
 fn test_parse(i: &[u8]) -> ::nom::IResult<&[u8], ()> {
-    use tables::TableTag;
-
-    use nom::Offset;
-    let (i1, fd) = try_parse!(i, font_directory::parse_font_directory);
-    let eaten = i.offset(i1);
-    let name_offset = fd.table_dirs.0.iter()
-        .find(|tdr| tdr.tag == TableTag::Name)
-        .map(|tdr| tdr.offset)
-        .expect("Coulnd't find name table");
-
-    let name_offset = name_offset - eaten as u32;
-    let (i_name, _) = try_parse!(i1, take!(name_offset));
-    let (i_fin, nt) = try_parse!(i_name, name::parse_name_table);
-
-    println!("name_table = {:#?}", nt);
-
-    Ok((i_fin, ()))
+    unimplemented!()
+    //
+    // use tables::TableTag;
+    //
+    // use nom::Offset;
+    // let (i1, fd) = try_parse!(i, font_directory::parse_font_directory);
+    // let eaten = i.offset(i1);
+    // let name_offset = fd.table_dirs.0.iter()
+    //     .find(|tdr| tdr.tag == TableTag::Name)
+    //     .map(|tdr| tdr.offset)
+    //     .expect("Coulnd't find name table");
+    //
+    // let name_offset = name_offset - eaten as u32;
+    // let (i_name, _) = try_parse!(i1, take!(name_offset));
+    // let (i_fin, nt) = try_parse!(i_name, name::parse_name_table);
+    //
+    // println!("name_table = {:#?}", nt);
+    //
+    // Ok((i_fin, ()))
 }
