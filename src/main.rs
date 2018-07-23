@@ -10,7 +10,7 @@ const SANS_MONO: &'static str = "fonts/DejaVuSansMono.ttf";
 
 fn main() {
     let font_buf = load_file(SANS_MONO);
-    toy_ttf::parse::load_font(&font_buf);
+    // toy_ttf::parse::load_font(&font_buf);
 }
 
 fn load_file(name: &str) -> Vec<u8> {
