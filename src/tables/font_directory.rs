@@ -20,9 +20,24 @@ pub struct TableRecords<'file> {
     num_left: u16,
 }
 
-// impl<'a> Iterator for TableRecords<'a> {
-//     type Item = 
-// }
+impl<'a> Iterator for TableRecords<'a> {
+    type Item = TableDirRecord;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        use parse::font_directory::table_directory_record;
+
+        if self.num_left < 1 {
+            return None;
+        }
+
+        let (next_record, record) = table_directory_record(self.next_record).ok()?;
+
+        self.num_left -= 1;
+        self.next_record = next_record;
+
+        Some(record)
+    }
+}
 
 #[derive(Debug)]
 pub struct TableDirectory(pub Vec<TableDirRecord>);
@@ -49,4 +64,33 @@ pub enum ScalerType {
     TTF, // 'true'
     PostScript, // 'typ1'
     OpenType, // 'OTTO'
+}
+
+#[cfg(test)]
+mod tests {
+    use font::Font;
+
+    fn load_file() -> Vec<u8> {
+        let name = "fonts/DejaVuSansMono.ttf";
+        use std::fs::File;
+        use std::io::BufReader;
+        use std::io::prelude::*;
+
+        let file = File::open(name).expect("unable to open file");
+
+        let mut reader = BufReader::new(file);
+        let mut data = Vec::new();
+        reader.read_to_end(&mut data).expect("error reading file");
+
+        data
+    }
+
+    #[test]
+    fn table_dir_record_iteration() {
+        let buf = load_file();
+        let font = Font::from_buffer(&buf).unwrap();
+
+        let num_iter_results = font.font_dir.table_records().count();
+        assert_eq!(num_iter_results, font.font_dir.offsets.num_tables as usize);
+    }
 }

@@ -29,7 +29,7 @@ map!(
     |entries| TableDirectory(entries)
 )
 );
-named!(table_directory_record<TableDirRecord>,
+named!(pub table_directory_record<TableDirRecord>,
        do_parse!(
            tag: table_tag >>
            check_sum: be_u32 >>

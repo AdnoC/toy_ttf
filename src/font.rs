@@ -3,7 +3,7 @@ use parse::font_directory::parse_font_directory;
 
 pub struct Font<'file> {
     buf: &'file [u8],
-    font_dir: FontDirectory<'file>,
+    pub(crate) font_dir: FontDirectory<'file>,
 }
 
 impl<'a> Font<'a> {
