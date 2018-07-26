@@ -13,16 +13,6 @@ use quote::ToTokens;
 use syn::DeriveInput;
 use synstructure::{BindingInfo, Structure};
 
-// use proc_macro::TokenStream;
-// #[proc_macro_derive(Parse, attributes(len_src, file_only))]
-// pub fn parse_derive(input: TokenStream) -> proc_macro::TokenStream {
-//     let gen = quote! { struct Hi; };
-//     gen.into_token_stream().into()
-//     // let ast: DeriveInput = syn::parse(input).unwrap();
-//     // let gen = parse_impl(ast);
-//     // gen.into()
-// }
-
 fn parse_derive(mut s: Structure) -> TokenStream {
     let buf_var = quote! { buf };
 
@@ -152,6 +142,7 @@ fn parse_derive(mut s: Structure) -> TokenStream {
     };
 
     use proc_macro2::{Ident, Span};
+    // Use hygene
     let const_name = Ident::new(
         &("_DERIVE_Parse_a_FOR_".to_string() + &name.to_string()),
         Span::call_site(),
@@ -163,23 +154,6 @@ fn parse_derive(mut s: Structure) -> TokenStream {
         };
     }
 }
-// {
-//         use Parse;
-//         impl<#parse_lt> Parse<#parse_lt> for @Self {
-//             fn file_size(&self) -> usize {
-//                 match *self {
-//                     #size_body
-//                 }
-//             }
-//
-//             fn parse(#buf_var: &#parse_lt [u8]) -> (&#parse_lt [u8], Self) {
-//                 #(#parse_main)*
-//
-//                 let val = #parse_body;
-//                 (#buf_var, val)
-//             }
-//         }
-// }
 
 fn get_array_buffer_len(bi: &BindingInfo) -> Option<syn::Ident> {
     use proc_macro2::{Ident, Span};
@@ -208,39 +182,6 @@ fn is_array_buffer(bi: &BindingInfo) -> bool {
             Some(meta) => meta.name() == "arr_len_src",
             None => false,
         })
-}
-
-#[allow(dead_code)]
-trait Parse {
-    /// Size of the object when serialized in the file
-    fn file_size(&self) -> usize;
-    fn parse(buf: &[u8]) -> (&[u8], Self);
-}
-
-#[allow(dead_code)]
-trait ArrayBuffer<T: Parse> {
-    fn new(start: &[u8], len: usize) -> (&[u8], Self);
-}
-#[allow(dead_code)]
-struct ArrBuf<'a, T: Parse + 'a>(&'a [u8], ::std::marker::PhantomData<&'a [T]>);
-
-fn gen_final_struct(mut s: Structure) -> TokenStream {
-    // Would also need to remove the custom attributes from the generated type def
-    s.filter(|bi| {
-        !bi.ast()
-            .attrs
-            .iter()
-            .any(|attr| match attr.interpret_meta() {
-                Some(meta) => meta.name() == "file_only",
-                None => false,
-            })
-    });
-
-    use proc_macro2::{Ident, Span};
-
-    let mut ast = s.ast().clone();
-    ast.ident = Ident::new("QWER", Span::call_site());
-    ast.into_token_stream()
 }
 
 fn ident_for_index(i: usize) -> syn::Ident {
