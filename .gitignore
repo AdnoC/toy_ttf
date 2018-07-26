@@ -1,4 +1,5 @@
 /target
+/parse_derive/target
 **/*.rs.bk
 Cargo.lock
 tags

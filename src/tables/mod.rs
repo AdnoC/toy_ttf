@@ -7,7 +7,7 @@ pub enum ParseTableErrorInner {
 pub type ParseTableError<'a> = ::nom::Err<&'a [u8], ParseTableErrorInner>;
 pub trait PrimaryTable<'file>: Sized {
     fn tag() -> TableTag;
-    fn parse(table_start: &'file [u8]) -> Result<Self, ParseTableError>;
+    fn parse(table_buf: &'file [u8]) -> Result<Self, ParseTableError>;
 }
 
 // https://stackoverflow.com/questions/42199727/how-to-construct-const-integers-from-literal-byte-expressions
