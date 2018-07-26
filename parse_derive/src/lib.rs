@@ -67,7 +67,6 @@ fn parse_derive(s: Structure) -> TokenStream {
         }
     });
 
-
     let mut generics = s.ast().generics.clone();
     let (_, ty_gen, where_clause) = s.ast().generics.split_for_impl();
 

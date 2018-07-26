@@ -42,7 +42,6 @@ struct Other<'o> {
 #[derive(Parse)]
 struct O<'a, T: Parse<'a>>(T, Other<'a>, T);
 
-
 impl<'a> Parse<'a> for &'a [u8] {
     fn file_size(&self) -> usize {
         self.len()
