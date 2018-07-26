@@ -49,6 +49,10 @@ extern crate num_traits;
 
 extern crate widestring;
 
+extern crate byteorder;
+
+#[macro_use]
+extern crate parse_derive;
 
 // NOTE: TrueType is big endian (from https://wiki.osdev.org/TrueType_Fonts)
 

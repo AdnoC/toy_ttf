@@ -89,7 +89,6 @@ fn parse_derive(s: Structure) -> TokenStream {
     // extern crate parse_derive;
     let name = &s.ast().ident;
     let real_impl = quote! {
-        use Parse;
         impl #impl_gen Parse<#parse_lt> for #name #ty_gen #where_clause {
             fn file_size(&self) -> usize {
                 match *self {

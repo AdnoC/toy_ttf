@@ -10,6 +10,8 @@ num-derive = {version = "0.2", features = ["full-syntax"]}
 widestring = "0.3"
 byte-slice-cast = "0.2"
 encoding = "0.2"
+byteorder = "1.2"
+parse_derive = {path = "parse_derive"}
 
 [dev-dependencies]
 byte_conv = "0.1"
