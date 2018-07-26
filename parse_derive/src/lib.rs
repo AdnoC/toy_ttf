@@ -11,6 +11,7 @@ extern crate syn;
 use proc_macro2::TokenStream;
 use synstructure::{BindingInfo, Structure};
 
+#[allow(needless_pass_by_value)]
 fn parse_derive(s: Structure) -> TokenStream {
     let buf_var = quote! { buf };
 
@@ -19,10 +20,8 @@ fn parse_derive(s: Structure) -> TokenStream {
         for bind in var.bindings() {
             if is_array_buffer(bind) {
                 found_dyn_sized = true;
-            } else {
-                if found_dyn_sized {
-                    panic!("Dynamically sized fields must be last");
-                }
+            } else if found_dyn_sized {
+                panic!("Dynamically sized fields must be last");
             }
         }
     }
