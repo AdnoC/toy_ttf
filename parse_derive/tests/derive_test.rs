@@ -38,66 +38,10 @@ struct Other<'o> {
     #[arr_len_src = "count"]
     data: &'o [u8],
 }
-// #[derive(Parse)]
-// struct O<'a>(Other<'a>);
 
-// impl<'o> Parse<'o> for Other<'o> {
-//     fn file_size(&self) -> usize {
-//         match *self {
-//             Other {
-//                 count: ref __binding_0,
-//                 some_id: ref __binding_1,
-//                 data: ref __binding_2,
-//             } => 0 + __binding_0.file_size() + __binding_1.file_size() + __binding_2.file_size(),
-//         }
-//     }
-//     fn parse(buf: &'o [u8]) -> (&'o [u8], Self) {
-//         let res = <u16 as Parse>::parse(buf);
-//         let buf = res.0;
-//         let count = res.1;
-//         let res = <u8 as Parse>::parse(buf);
-//         let buf = res.0;
-//         let some_id = res.1;
-//         let res = {
-//             let len = count as usize;
-//             let buf = &buf[0..len];
-//             let res = <&'o [u8] as Parse>::parse(buf);
-//             (&buf[len..], res.1)
-//         };
-//         let buf = res.0;
-//         let data = res.1;
-//         let val = Other {
-//             count: count,
-//             some_id: some_id,
-//             data: data,
-//         };
-//         (buf, val)
-//     }
-// }
-// trait ArrayBuffer<'a, T: Parse> {
-//     fn new(start: &'a [u8], len: usize) -> (&'a [u8], Self);
-//     fn len(&self) -> usize;
-// }
-// impl<'a, T: Parse, AB: ArrayBuffer<'a, T>> Parse for AB {
-//     fn file_size(&self) -> usize {
-//         self.len()
-//     }
-//     fn parse(buf: &[u8]) -> (&[u8], Self) {
-//         unimplemented!()
-//     }
-// }
+#[derive(Parse)]
+struct O<'a, T: Parse<'a>>(T, Other<'a>, T);
 
-// #[derive(Debug)]
-// struct Something<'a>(&'a [u8]);
-// impl<'a> Parse for Something<'a> {
-//     fn file_size(&self) -> usize { self.0.len() }
-//     fn parse(buf: &[u8]) -> (&[u8], Something<'a>) {
-//         let b1 = buf;
-//         let b2 = buf;
-//         (b1, Something(b2))
-//         // (buf, Something(buf))
-//     }
-// }
 
 impl<'a> Parse<'a> for &'a [u8] {
     fn file_size(&self) -> usize {
@@ -107,12 +51,6 @@ impl<'a> Parse<'a> for &'a [u8] {
         (buf, buf)
     }
 }
-// impl<'a> ArrayBuffer<'a, u16> for Something<'a> {
-//     fn new(start: &'a [u8], len: usize) -> (&'a [u8], Self) {
-//         (&start[len..], Something(&start[0..len]))
-//     }
-//     fn len(&self) -> usize { self.0.len() }
-// }
 
 #[test]
 fn derive_works() {
@@ -122,4 +60,16 @@ fn derive_works() {
     let buf: &[u8] = &[0, 5, 0, 6, 0, 12];
     let t = Thing::parse(buf).1;
     assert_eq!(t, Thing { a: 5, b: 6, c: 12 });
+
+    let mess = "Hello, World!";
+    let sized_buf: &[u8] = &[0, mess.len() as u8, 2];
+    let buf: Vec<u8> = sized_buf.into_iter().cloned().chain(mess.bytes()).collect();
+    let (remain, o) = Other::parse(&buf);
+
+    use std::str;
+
+    assert_eq!(o.count as usize, mess.len());
+    assert_eq!(o.some_id, 2);
+    assert_eq!(str::from_utf8(o.data), Ok(mess));
+    assert_eq!(remain.len(), 0);
 }

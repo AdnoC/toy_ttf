@@ -42,9 +42,10 @@ fn parse_derive(mut s: Structure) -> TokenStream {
     let parse_main: Vec<_> = s.variants()[0]
         .bindings()
         .iter()
-        .map(|bi| {
+        .enumerate()
+        .map(|(i, bi)| {
             let ty = &bi.ast().ty;
-            let name = &bi.ast().ident;
+            let name = bi.ast().ident.clone().unwrap_or_else(|| ident_for_index(i));
 
             if let Some(len_src) = get_array_buffer_len(&bi) {
                 quote! {
@@ -68,7 +69,7 @@ fn parse_derive(mut s: Structure) -> TokenStream {
         .collect();
     let parse_body = s.variants()[0].construct(|field, i| {
         let ty = &field.ty;
-        let name = &field.ident;
+        let name = field.ident.clone().unwrap_or_else(|| ident_for_index(i));
         quote! {
             #name
         }
@@ -240,6 +241,11 @@ fn gen_final_struct(mut s: Structure) -> TokenStream {
     let mut ast = s.ast().clone();
     ast.ident = Ident::new("QWER", Span::call_site());
     ast.into_token_stream()
+}
+
+fn ident_for_index(i: usize) -> syn::Ident {
+    use proc_macro2::{Ident, Span};
+    Ident::new(&format!("__field_{}", i), Span::call_site())
 }
 
 decl_derive!([Parse, attributes(arr_len_src)] => parse_derive);
