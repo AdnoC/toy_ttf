@@ -9,11 +9,9 @@ extern crate quote;
 extern crate syn;
 
 use proc_macro2::TokenStream;
-use quote::ToTokens;
-use syn::DeriveInput;
 use synstructure::{BindingInfo, Structure};
 
-fn parse_derive(mut s: Structure) -> TokenStream {
+fn parse_derive(s: Structure) -> TokenStream {
     let buf_var = quote! { buf };
 
     for var in s.variants() {
@@ -58,7 +56,6 @@ fn parse_derive(mut s: Structure) -> TokenStream {
         })
         .collect();
     let parse_body = s.variants()[0].construct(|field, i| {
-        let ty = &field.ty;
         let name = field.ident.clone().unwrap_or_else(|| ident_for_index(i));
         quote! {
             #name
