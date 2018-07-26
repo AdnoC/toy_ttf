@@ -7,7 +7,7 @@ pub struct FontDirectory<'file> {
 }
 
 impl<'a> FontDirectory<'a> {
-    pub fn table_record<T: PrimaryTable<'a>>(&self) -> Option<TableDirRecord> {
+    pub fn table_record<T: PrimaryTable>(&self) -> Option<TableDirRecord> {
         self.table_records()
             .find(|record| record.tag == T::tag())
     }

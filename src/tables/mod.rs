@@ -1,13 +1,13 @@
 pub mod name;
+pub mod cmap;
 pub mod font_directory;
 
 pub enum ParseTableErrorInner {
     TableNotFound
 }
 pub type ParseTableError<'a> = ::nom::Err<&'a [u8], ParseTableErrorInner>;
-pub trait PrimaryTable<'file>: Sized {
+pub trait PrimaryTable {
     fn tag() -> TableTag;
-    fn parse(table_buf: &'file [u8]) -> Result<Self, ParseTableError>;
 }
 
 // https://stackoverflow.com/questions/42199727/how-to-construct-const-integers-from-literal-byte-expressions

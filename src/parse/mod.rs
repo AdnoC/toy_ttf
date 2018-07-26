@@ -1,9 +1,8 @@
 mod name;
-mod cmap;
 mod primitives;
 pub(crate) mod font_directory;
 
-trait Parse<'a> {
+pub trait Parse<'a> {
     /// Size of the object when serialized in the file
     fn file_size(&self) -> usize;
     fn parse(buf: &'a [u8]) -> (&'a [u8], Self);

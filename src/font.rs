@@ -1,6 +1,7 @@
 use tables::{ParseTableError, PrimaryTable, ParseTableErrorInner};
 use tables::font_directory::FontDirectory;
 use parse::font_directory::parse_font_directory;
+use parse::Parse;
 
 pub struct Font<'file> {
     buf: &'file [u8],
@@ -18,14 +19,14 @@ impl<'a> Font<'a> {
         Ok(font)
     }
 
-    pub fn get_table<T: PrimaryTable<'a>>(&self) -> Result<T, ParseTableError> {
-        let table_start = self.get_table_start::<T>()
-            .ok_or(::nom::Err::Error(error_position!(self.buf, ::nom::ErrorKind::Custom(ParseTableErrorInner::TableNotFound))))?;
+    pub fn get_table<T: Parse<'a> + PrimaryTable>(&self) -> Option<T> {
+        let table_start = self.get_table_start::<T>()?;
 
-        T::parse(table_start)
+        let table = T::parse(table_start).1;
+        Some(table)
     }
 
-    fn get_table_start<T: PrimaryTable<'a>>(&self) -> Option<&'a [u8]> {
+    fn get_table_start<T: PrimaryTable>(&self) -> Option<&'a [u8]> {
         self.font_dir.table_record::<T>()
             .map(|record| &self.buf[(record.offset as usize)..])
     }

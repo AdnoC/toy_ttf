@@ -1,28 +1,15 @@
-type ShortFrac = u16;
-type Fixed = (u16, u16);
-type FWord = u16;
-type uFWord = u16;
-type F2Dot14 = u16;
-type LongDateTime = i64;
+use parse::Parse;
 
-#[derive(Debug)]
+#[derive(Debug, Parse)]
 struct CMap<'a> {
     version: u16,
     num_subtables: u16,
     subtables: &'a [u8],
 }
-impl ::table::PrimaryTable<'a> for Cmap<'a> {
-    fn tag() -> ::table::TableTag {
-        ::table::TableTag::CharacterCodeMapping
+impl<'a> ::tables::PrimaryTable for CMap<'a> {
+    fn tag() -> ::tables::TableTag {
+        ::tables::TableTag::CharacterCodeMapping
     }
-    fn parse(table_buf: &'a [u8]) -> Result<Self, ::table::ParseTableError> {
-
-    }
-}
-
-pub trait PrimaryTable<'file>: Sized {
-    fn tag() -> TableTag;
-    fn parse(table_start: &'file [u8]) -> Result<Self, ParseTableError>;
 }
 
 struct CMapEncodingRecord {
