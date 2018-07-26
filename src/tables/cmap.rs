@@ -4,6 +4,7 @@ use parse::Parse;
 struct CMap<'a> {
     version: u16,
     num_subtables: u16,
+    #[arr_len_src = "num_subtables"]
     subtables: &'a [u8],
 }
 impl<'a> ::tables::PrimaryTable for CMap<'a> {

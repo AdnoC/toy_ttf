@@ -1,12 +1,12 @@
 use parse::Parse;
 use byteorder::{BigEndian, ByteOrder};
 
-type ShortFrac = u16;
-type Fixed = (u16, u16);
-type FWord = u16;
-type uFWord = u16;
-type F2Dot14 = u16;
-type LongDateTime = i64;
+pub type ShortFrac = i16;
+pub type Fixed = (i16, i16);
+pub type FWord = i16;
+pub type UFWord = u16;
+pub type F2Dot14 = i16;
+pub type LongDateTime = i64;
 
 impl<'a> Parse<'a> for &'a [u8] {
     fn file_size(&self) -> usize {
