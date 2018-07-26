@@ -26,16 +26,56 @@ use synstructure::{BindingInfo, Structure};
 fn parse_derive(mut s: Structure) -> TokenStream {
     let buf_var = quote! { buf };
 
-    // let parse_body = s.each(|bi| {
-    //     if let Some(len_src) = get_array_buffer_len(&bi) {
-    //         quote! { unimplemented!() }
-    //     } else {
-    //         quote! { unimplemented!() }
-    //     }
-    // });
+    for var in s.variants() {
+        let mut found_dyn_sized = false;
+        for bind in var.bindings() {
+            if is_array_buffer(bind) {
+                found_dyn_sized = true;
+            } else {
+                if found_dyn_sized {
+                    panic!("Dynamically sized fields must be last");
+                }
+            }
+        }
+    }
+
+    let parse_main: Vec<_> = s.variants()[0]
+        .bindings()
+        .iter()
+        .map(|bi| {
+            let ty = &bi.ast().ty;
+            let name = &bi.ast().ident;
+
+            if let Some(len_src) = get_array_buffer_len(&bi) {
+                quote! {
+                    use ArrayBuffer;
+                    let res = <#ty as ArrayBuffer>::new(#buf_var, #len_src);
+                    let #buf_var = res.0;
+                    let #name = res.1;
+                }
+            } else {
+                quote! {
+                    let res = <#ty as Parse>::parse(#buf_var);
+                    let #buf_var = res.0;
+                    let #name = res.1;
+                }
+            }
+        })
+        .collect();
+    let parse_body = s.variants()[0].construct(|field, i| {
+        let ty = &field.ty;
+        let name = &field.ident;
+        quote! {
+            #name
+        }
+        // if let Some(len_src) = get_array_buffer_len(&bi) {
+        //     quote! { unimplemented!() }
+        // } else {
+        //     quote! { unimplemented!() }
+        // }
+    });
 
     let size_body = s.fold(quote!(0), |acc, bi| {
-        // let ty = &bi.ast().ty;
         if let Some(len_src) = get_array_buffer_len(&bi) {
             quote! {
                 #acc + {
@@ -51,6 +91,10 @@ fn parse_derive(mut s: Structure) -> TokenStream {
     });
 
     println!("Size body = {:?}", size_body.to_string());
+    println!("");
+    println!("Parse main = {}", parse_main.iter().fold(String::new(), |acc, val| acc + "\n" + &val.to_string()));
+    println!("");
+    println!("Parse body = {:?}", parse_body.to_string());
 
         // extern crate parse_derive;
     s.gen_impl(quote! {
@@ -61,16 +105,15 @@ fn parse_derive(mut s: Structure) -> TokenStream {
                     #size_body
                 }
             }
+
+            fn parse(#buf_var: &[u8]) -> (&[u8], Self) {
+                #(#parse_main)*
+
+                let val = #parse_body;
+                (#buf_var, val)
+            }
         }
     })
-            // fn parse(#buf_var: &[u8]) -> (Self, &[u8]) {
-            //     (Default::default(), #buf_var)
-            //     // unimplemented!()
-            //
-            //     // match *self {
-            //     //     #parse_body
-            //     // }
-            // }
 }
 
 fn get_array_buffer_len(bi: &BindingInfo) -> Option<syn::Ident> {
@@ -103,15 +146,15 @@ fn is_array_buffer(bi: &BindingInfo) -> bool {
 }
 
 #[allow(dead_code)]
-trait Parse: Sized {
+trait Parse {
     /// Size of the object when serialized in the file
     fn file_size(&self) -> usize;
-    fn parse(buf: &[u8]) -> (Self, &[u8]);
+    fn parse(buf: &[u8]) -> (&[u8], Self);
 }
 
 #[allow(dead_code)]
 trait ArrayBuffer<T: Parse> {
-    fn new(start: &[u8], len: usize) -> Self;
+    fn new(start: &[u8], len: usize) -> (&[u8], Self);
 }
 #[allow(dead_code)]
 struct ArrBuf<'a, T: Parse + 'a>(&'a [u8], ::std::marker::PhantomData<&'a [T]>);
