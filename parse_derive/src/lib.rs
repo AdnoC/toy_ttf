@@ -60,45 +60,14 @@ fn parse_derive(s: Structure) -> TokenStream {
         quote! {
             #name
         }
-        // if let Some(len_src) = get_array_buffer_len(&bi) {
-        //     quote! { unimplemented!() }
-        // } else {
-        //     quote! { unimplemented!() }
-        // }
     });
 
     let size_body = s.fold(quote!(0), |acc, bi| {
-        // if let Some(len_src) = get_array_buffer_len(&bi) {
-        //     quote! {
-        //         #acc + {
-        //             let len = self.#len_src as usize;
-        //             len * #bi.file_size()
-        //         }
-        //     }
-        // } else {
         quote! {
             #acc + #bi.file_size()
         }
-        // }
     });
 
-    println!("Size body = {:?}", size_body.to_string());
-    println!("");
-    println!(
-        "Parse main = {}",
-        parse_main
-            .iter()
-            .fold(String::new(), |acc, val| acc + "\n" + &val.to_string())
-    );
-    println!("");
-    println!("Parse body = {:?}", parse_body.to_string());
-    println!(
-        "\nty params = [{}]",
-        s.referenced_ty_params()
-            .iter()
-            .fold(String::new(), |acc, val| acc + ", " + &val.to_string())
-    );
-    // extern crate parse_derive;
 
     let mut generics = s.ast().generics.clone();
     let (_, ty_gen, where_clause) = s.ast().generics.split_for_impl();
@@ -119,6 +88,7 @@ fn parse_derive(s: Structure) -> TokenStream {
         }
     };
 
+    // extern crate parse_derive;
     let name = &s.ast().ident;
     let real_impl = quote! {
         use Parse;
