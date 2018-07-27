@@ -14,7 +14,8 @@ fn main() {
     use toy_ttf::font::Font;
     use toy_ttf::tables::cmap::CMap;
     use toy_ttf::tables::maxp::MaxP;
-    let font_buf = load_file(ROBOTO);
+    // let font_buf = load_file(ROBOTO);
+    let font_buf = load_file(SANS_MONO);
     // toy_ttf::parse::load_font(&font_buf);
 
     let font = Font::from_buffer(&font_buf).unwrap();

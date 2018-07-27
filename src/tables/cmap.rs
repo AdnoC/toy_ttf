@@ -133,6 +133,7 @@ mod tests {
     use font::Font;
     use super::*;
 
+    #[test]
     fn cmap_primary() {
         let buf = font_buf();
         let font = Font::from_buffer(&buf).unwrap();
@@ -142,6 +143,7 @@ mod tests {
         assert_eq!(cmap.num_records, 5);
     }
 
+    #[test]
     fn cmap_records() {
         let buf = font_buf();
         let font = Font::from_buffer(&buf).unwrap();
@@ -179,6 +181,8 @@ mod tests {
             assert_eq!(actual, expected);
         }
     }
+
+    #[test]
     fn cmap_format4() {
         let buf = font_buf();
         let font = Font::from_buffer(&buf).unwrap();
@@ -202,13 +206,14 @@ mod tests {
 
     }
 
+    #[test]
     fn glyph_id_simple() {
         let buf = font_buf();
         let font = Font::from_buffer(&buf).unwrap();
         let cmap: CMap = font.get_table().unwrap();
         let f4 = cmap.format4().unwrap();
 
-        let expecteds: &[u16] = &[37, 69, 71];
+        let expecteds: &[u16] = &[36, 68, 70];
         let code_points: &[u16] = &[65, 97, 99];
         for (&code_point, &expected) in code_points.into_iter().zip(expecteds) {
             let glyph_id = f4.lookup_glyph_id(code_point).unwrap();
@@ -216,6 +221,7 @@ mod tests {
         }
     }
 
+    #[test]
     fn glyph_id_fancy() {
         use test_utils::{load_font_buf, ROBOTO};
         let buf = load_font_buf(ROBOTO);
