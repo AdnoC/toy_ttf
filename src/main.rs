@@ -10,22 +10,28 @@ const SANS_MONO: &'static str = "fonts/DejaVuSansMono.ttf";
 const ROBOTO: &'static str = "fonts/Roboto-Regular.ttf";
 
 fn main() {
-    use toy_ttf::font::{GetTable, Font};
-    use toy_ttf::tables::cmap::CMap;
-    use toy_ttf::tables::head::Head;
-    use toy_ttf::tables::maxp::MaxP;
-    use toy_ttf::tables::loca::Loca;
-    // let font_buf = load_file(ROBOTO);
-    let font_buf = load_file(SANS_MONO);
-    // toy_ttf::parse::load_font(&font_buf);
+    use toy_ttf::render::*;
+    let mut raster = Raster::new(50, 50);
 
-    let font = Font::from_buffer(&font_buf).unwrap();
+    raster.draw_line(Point {x: 0., y: 0.}, Point { x: 25., y: 25. });
+    raster.0.save("RASTER_RESULT.bmp").unwrap();
 
-    let loca: Loca = font.get_table().unwrap();
-    println!("{:#?}", loca);
-
-    let cmap: CMap = font.get_table().unwrap();
-    println!("{:#?}", cmap);
+    // use toy_ttf::font::{GetTable, Font};
+    // use toy_ttf::tables::cmap::CMap;
+    // use toy_ttf::tables::head::Head;
+    // use toy_ttf::tables::maxp::MaxP;
+    // use toy_ttf::tables::loca::Loca;
+    // // let font_buf = load_file(ROBOTO);
+    // let font_buf = load_file(SANS_MONO);
+    // // toy_ttf::parse::load_font(&font_buf);
+    //
+    // let font = Font::from_buffer(&font_buf).unwrap();
+    //
+    // let loca: Loca = font.get_table().unwrap();
+    // println!("{:#?}", loca);
+    //
+    // let cmap: CMap = font.get_table().unwrap();
+    // println!("{:#?}", cmap);
     // for rec in cmap.encoding_records() {
     //     println!("{:#?}", rec);
     // }

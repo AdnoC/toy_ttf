@@ -52,6 +52,8 @@ extern crate byteorder;
 
 extern crate itertools;
 
+extern crate image;
+
 #[macro_use]
 extern crate parse_derive;
 
@@ -61,6 +63,7 @@ extern crate parse_derive;
 mod parse;
 pub mod font;
 pub mod tables;
+pub mod render;
 
 #[cfg(test)]
 pub(crate) mod test_utils {

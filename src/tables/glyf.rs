@@ -72,7 +72,7 @@ pub enum Description<'a> {
     Composite, // TODO
 }
 
-pub(crate) struct SimpleGlyph<'a> {
+pub struct SimpleGlyph<'a> {
     end_points_of_contours: DynArr<'a, u16>,
     instruction_length: u16,
     instructions: DynArr<'a, u8>,

@@ -13,6 +13,7 @@ encoding = "0.2"
 byteorder = "1.2"
 parse_derive = {path = "parse_derive"}
 itertools = "0.7"
+image = "0.19"
 
 [dev-dependencies]
 byte_conv = "0.1"
