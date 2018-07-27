@@ -5,7 +5,7 @@ use tables::{PrimaryTable, TableTag};
 #[derive(Debug, Parse)]
 pub struct MaxP<'a> {
     version: Fixed,
-    num_glyphs: u16,
+    pub(crate) num_glyphs: u16,
     ext_start: BufView<'a, MaxPV1Ext>,
 }
 impl<'a> PrimaryTable for MaxP<'a> {

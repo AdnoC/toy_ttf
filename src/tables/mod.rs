@@ -2,6 +2,7 @@ pub mod name;
 pub mod head;
 pub mod cmap;
 pub mod maxp;
+pub mod loca;
 pub mod font_directory;
 
 pub enum ParseTableErrorInner {

@@ -21,8 +21,8 @@ fn main() {
 
     let font = Font::from_buffer(&font_buf).unwrap();
 
-    let head: Head = font.get_table().unwrap();
-    println!("{:#?}", head);
+    let loca = font.loca_table().unwrap();
+    println!("{:#?}", loca);
 
     // let cmap = font.get_table::<CMap>().unwrap();
     // println!("{:#?}", cmap);

@@ -20,7 +20,7 @@ pub struct Head {
     mac_style: u16,
     lowest_recPPEM: u16,
     font_direction_hint: i16,
-    index_to_loc_format: i16,
+    pub(crate) index_to_loc_format: IndexToLocFormat,
     glyph_data_format: i16
 }
 
@@ -29,6 +29,14 @@ impl PrimaryTable for Head {
         TableTag::FontHeader
     }
 }
+
+#[repr(i16)]
+#[derive(Debug, FromPrimitive, PartialEq, Eq)]
+pub enum IndexToLocFormat {
+    Short = 0,
+    Long = 1,
+}
+derive_parse_from_primitive!(IndexToLocFormat, i16);
 
 
 #[cfg(test)]

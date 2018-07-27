@@ -53,3 +53,23 @@ impl_primitives! {
     i64: BigEndian::read_i64
 }
 
+macro_rules! derive_parse_from_primitive {
+    ($type:ty, $prim:ty, $parser:expr) => (
+        impl<'a> Parse<'a> for $type {
+                fn approx_file_size() -> usize {
+                    <$prim as Parse>::approx_file_size()
+                }
+
+                fn parse(buf: &'a [u8]) -> (&'a [u8], Self) {
+                    use num_traits::FromPrimitive;
+                    let (buf, prim_val) = <$prim as Parse>::parse(buf);
+                    let val = $parser(prim_val).unwrap();
+                    (buf, val)
+                }
+
+        }
+    );
+    ($type:ty, i16) => (
+        derive_parse_from_primitive!($type, i16, <$type as FromPrimitive>::from_i16);
+    );
+}

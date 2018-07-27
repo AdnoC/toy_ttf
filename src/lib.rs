@@ -58,6 +58,7 @@ extern crate parse_derive;
 
 // NOTE: TrueType is big endian (from https://wiki.osdev.org/TrueType_Fonts)
 
+#[macro_use]
 mod parse;
 pub mod tables;
 pub mod font;
