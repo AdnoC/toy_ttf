@@ -3,6 +3,7 @@ pub mod font_directory;
 pub mod head;
 pub mod loca;
 pub mod maxp;
+pub mod glyf;
 pub mod name;
 
 pub enum ParseTableErrorInner {
