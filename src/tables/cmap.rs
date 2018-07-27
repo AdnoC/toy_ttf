@@ -130,7 +130,7 @@ impl<'a> Format4<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use font::Font;
+    use font::*;
     use test_utils::font_buf;
 
     #[test]

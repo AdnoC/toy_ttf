@@ -10,21 +10,22 @@ const SANS_MONO: &'static str = "fonts/DejaVuSansMono.ttf";
 const ROBOTO: &'static str = "fonts/Roboto-Regular.ttf";
 
 fn main() {
-    use toy_ttf::font::Font;
+    use toy_ttf::font::{GetTable, Font};
     use toy_ttf::tables::cmap::CMap;
     use toy_ttf::tables::head::Head;
     use toy_ttf::tables::maxp::MaxP;
+    use toy_ttf::tables::loca::Loca;
     // let font_buf = load_file(ROBOTO);
     let font_buf = load_file(SANS_MONO);
     // toy_ttf::parse::load_font(&font_buf);
 
     let font = Font::from_buffer(&font_buf).unwrap();
 
-    let loca = font.loca_table().unwrap();
+    let loca: Loca = font.get_table().unwrap();
     println!("{:#?}", loca);
 
-    // let cmap = font.get_table::<CMap>().unwrap();
-    // println!("{:#?}", cmap);
+    let cmap: CMap = font.get_table().unwrap();
+    println!("{:#?}", cmap);
     // for rec in cmap.encoding_records() {
     //     println!("{:#?}", rec);
     // }

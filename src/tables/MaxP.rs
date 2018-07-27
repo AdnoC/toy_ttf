@@ -52,7 +52,7 @@ pub struct MaxPV1Ext {
 #[cfg(test)]
 mod test {
     use super::{MaxP, MaxPV1Ext};
-    use font::Font;
+    use font::*;
     use test_utils::font_buf;
 
     #[test]

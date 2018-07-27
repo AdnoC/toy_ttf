@@ -18,12 +18,6 @@ impl<'a> Font<'a> {
         Ok(font)
     }
 
-    pub fn get_table<T: Parse<'a> + PrimaryTable>(&self) -> Option<T> {
-        let table_start = self.get_table_start::<T>()?;
-
-        let table = T::parse(table_start).1;
-        Some(table)
-    }
 
     fn get_table_start<T: PrimaryTable>(&self) -> Option<&'a [u8]> {
         self.font_dir
@@ -31,7 +25,23 @@ impl<'a> Font<'a> {
             .map(|record| &self.buf[(record.offset as usize)..])
     }
 
-    pub fn loca_table(&self) -> Option<Loca<'a>> {
+}
+
+pub trait GetTable<T> {
+    fn get_table(&self) -> Option<T> ;
+}
+
+impl<'a, T: Parse<'a> + PrimaryTable> GetTable<T> for Font<'a> {
+    fn get_table(&self) -> Option<T> {
+        let table_start = self.get_table_start::<T>()?;
+
+        let table = T::parse(table_start).1;
+        Some(table)
+    }
+}
+
+impl<'a> GetTable<Loca<'a>> for Font<'a> {
+    fn get_table(&self) -> Option<Loca<'a>> {
         use parse::DynArr;
         use std::marker::PhantomData;
         use tables::head::{Head, IndexToLocFormat};
@@ -58,6 +68,7 @@ impl<'a> Font<'a> {
 
         Some(loca)
     }
+
 }
 
 // FIXME: Change from just a typedef of IResult's error type

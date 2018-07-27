@@ -40,8 +40,8 @@ derive_parse_from_primitive!(IndexToLocFormat, i16);
 
 #[cfg(test)]
 mod tests {
-    use super::Head;
-    use font::Font;
+    use super::*;
+    use font::*;
     use test_utils::font_buf;
 
     #[test]
@@ -68,7 +68,7 @@ mod tests {
             mac_style: 0,
             lowest_recPPEM: 8,
             font_direction_hint: 0,
-            index_to_loc_format: 1,
+            index_to_loc_format: IndexToLocFormat::Long,
             glyph_data_format: 0,
         };
 
