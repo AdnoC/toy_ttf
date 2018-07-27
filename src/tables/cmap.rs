@@ -98,17 +98,18 @@ impl<'a> Format4<'a> {
             let glyph_val = self.glyph_ids.at(glyph_idx as usize);
             if glyph_val != 0 {
                 // id_delta arithmetic is modulo 2^16
-                let glyph_val = glyph_val.wrapping_add(id_delta as u16);
+                // TODO: Check whether commenting this out is correct
+                // let glyph_val = glyph_val.wrapping_add(id_delta as u16);
                 Some(glyph_val)
             } else {
                 None
             }
         } else {
-            let glyph_val = (start_idx as u16).wrapping_add(id_delta as u16);
+            // id_delta arithmetic is modulo 2^16
+            let glyph_val = code_point.wrapping_add(id_delta as u16);
             Some(glyph_val)
         }
     }
-    // TODO: Test
     pub fn lookup_glyph_id(&self, code_point: u16) -> Option<u16> {
         use byteorder::{ByteOrder, BE};
         for (idx, end_code) in self.end_counts.iter().enumerate() {
@@ -199,5 +200,30 @@ mod tests {
         assert_eq!(f4.glyph_ids.0.len(), 321944);
 
 
+    }
+
+    fn glyph_id_simple() {
+        let buf = font_buf();
+        let font = Font::from_buffer(&buf).unwrap();
+        let cmap: CMap = font.get_table().unwrap();
+        let f4 = cmap.format4().unwrap();
+
+        let expecteds: &[u16] = &[37, 69, 71];
+        let code_points: &[u16] = &[65, 97, 99];
+        for (&code_point, &expected) in code_points.into_iter().zip(expecteds) {
+            let glyph_id = f4.lookup_glyph_id(code_point).unwrap();
+            assert_eq!(glyph_id, expected);
+        }
+    }
+
+    fn glyph_id_fancy() {
+        use test_utils::{load_font_buf, ROBOTO};
+        let buf = load_font_buf(ROBOTO);
+        let font = Font::from_buffer(&buf).unwrap();
+        let cmap: CMap = font.get_table().unwrap();
+        let f4 = cmap.format4().unwrap();
+
+        let glyph_id = f4.lookup_glyph_id(192).unwrap();
+        assert_eq!(glyph_id, 639);
     }
 }

@@ -7,12 +7,14 @@ const SERIF: &'static str = "fonts/DejaVuSerif.ttf";
 const SANS: &'static str = "fonts/DejaVuSans.ttf";
 #[allow(dead_code)]
 const SANS_MONO: &'static str = "fonts/DejaVuSansMono.ttf";
+#[allow(dead_code)]
+const ROBOTO: &'static str = "fonts/Roboto-Regular.ttf";
 
 fn main() {
     use toy_ttf::font::Font;
     use toy_ttf::tables::cmap::CMap;
     use toy_ttf::tables::maxp::MaxP;
-    let font_buf = load_file(SANS_MONO);
+    let font_buf = load_file(ROBOTO);
     // toy_ttf::parse::load_font(&font_buf);
 
     let font = Font::from_buffer(&font_buf).unwrap();
@@ -26,6 +28,14 @@ fn main() {
     let maxp = font.get_table::<MaxP>().unwrap();
     println!("{:#?}", maxp);
     println!("{:#?}", maxp.version_1_ext());
+
+    for &code_point in &[65, 97, 99, 0xFFFF] {
+        let gid = format4.lookup_glyph_id(code_point).expect("lookup glyph id");
+        println!("gid[{}] = {}", code_point, gid);
+    }
+
+    let gid = format4.lookup_glyph_id(192).expect("fancy glyph id lookup");
+    println!("gid[192] = {}", gid);
 }
 
 fn load_file(name: &str) -> Vec<u8> {

@@ -64,7 +64,8 @@ pub mod font;
 
 #[cfg(test)]
 pub(crate) mod test_utils {
-    const SANS_MONO: &'static str = "fonts/DejaVuSansMono.ttf";
+    pub const SANS_MONO: &'static str = "fonts/DejaVuSansMono.ttf";
+    pub const ROBOTO: &'static str = "fonts/Roboto-Regular.ttf";
 
     pub fn font_buf() -> Vec<u8> {
         load_font_buf(SANS_MONO)
