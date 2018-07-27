@@ -9,7 +9,7 @@ pub type LongDateTime = i64;
 
 // Represents the number (self.0).(self.1)
 // e.g. 0.5 is (0x0000).(0x5000)
-#[derive(Debug, Parse)]
+#[derive(Debug, Parse, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Fixed(pub i16, pub i16);
 
 // impl<'a> Parse<'a> for &'a [u8] {

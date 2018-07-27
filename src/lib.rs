@@ -61,3 +61,26 @@ extern crate parse_derive;
 mod parse;
 pub mod tables;
 pub mod font;
+
+#[cfg(test)]
+pub(crate) mod test_utils {
+    const SANS_MONO: &'static str = "fonts/DejaVuSansMono.ttf";
+
+    pub fn font_buf() -> Vec<u8> {
+        load_font_buf(SANS_MONO)
+    }
+    pub fn load_font_buf(name: &str) -> Vec<u8> {
+
+        use std::fs::File;
+        use std::io::BufReader;
+        use std::io::prelude::*;
+
+        let file = File::open(name).expect("unable to open file");
+
+        let mut reader = BufReader::new(file);
+        let mut data = Vec::new();
+        reader.read_to_end(&mut data).expect("error reading file");
+
+        data
+    }
+}
