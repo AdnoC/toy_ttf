@@ -18,7 +18,8 @@ fn main() {
     let font = Font::from_buffer(&font_buf).unwrap();
     let cmap = font.get_table::<CMap>().unwrap();
     let format4 = cmap.format4().unwrap();
-    let maxp = font.get_table::<MaxP>().unwrap();
+    println!("{:?}", format4);
+    // let maxp = font.get_table::<MaxP>().unwrap();
 }
 
 fn load_file(name: &str) -> Vec<u8> {

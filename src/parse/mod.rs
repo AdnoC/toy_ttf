@@ -10,7 +10,6 @@ pub trait Parse<'a> {
     fn parse(buf: &'a [u8]) -> (&'a [u8], Self);
 }
 
-#[derive(Debug)]
 pub(crate) struct BufView<'a, T>(pub &'a [u8], ::std::marker::PhantomData<T>);
 impl<'a, T: Parse<'a>> Parse<'a> for BufView<'a, T> {
     fn approx_file_size() -> usize {
@@ -27,9 +26,17 @@ impl<'a, T: Parse<'a>> BufView<'a, T> {
         T::parse(&self.0[sized_idx..]).1
     }
 }
+impl<'a, T: Parse<'a>> fmt::Debug for BufView<'a, T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let typed_len = self.0.len() / T::approx_file_size();
+        f.debug_struct("BufView")
+            .field("typed_len", &typed_len)
+            .field("len", &self.0.len())
+            .finish()
+    }
+}
 
 
-#[derive(Debug, Clone)]
 pub(crate) struct DynArr<'a, T>(pub &'a [u8], ::std::marker::PhantomData<T>);
 impl<'a, T: Parse<'a>> DynArr<'a, T> {
     pub fn at(&self, idx: usize) -> T {
@@ -37,7 +44,7 @@ impl<'a, T: Parse<'a>> DynArr<'a, T> {
         T::parse(&self.0[sized_idx..]).1
     }
     pub fn iter(&self) -> DynArr<'a, T> {
-        DynArr(self.0.clone(), self.1.clone())
+        self.clone()
     }
 }
 impl<'a, T: Parse<'a>> Parse<'a> for DynArr<'a, T> {
@@ -80,6 +87,20 @@ impl<'a, T: Parse<'a>> ::std::iter::DoubleEndedIterator for DynArr<'a, T> {
         let (_, val) = T::parse(&self.0[start_point..]);
         self.0 = &self.0[..start_point];
         Some(val)
+    }
+}
+impl<'a, T> Clone for DynArr<'a, T> {
+    fn clone(&self) -> Self {
+        DynArr(self.0.clone(), self.1.clone())
+    }
+}
+impl<'a, T: Parse<'a>> fmt::Debug for DynArr<'a, T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let typed_len = self.0.len() / T::approx_file_size();
+        f.debug_struct("DynArr")
+            .field("typed_len", &typed_len)
+            .field("len", &self.0.len())
+            .finish()
     }
 }
 
