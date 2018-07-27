@@ -1,5 +1,6 @@
 use parse::{BufView, DynArr, Parse};
 use tables::RecordIterator;
+use tables::{PrimaryTable, TableTag};
 
 #[derive(Debug, Parse)]
 pub struct CMap<'a> {
@@ -9,9 +10,9 @@ pub struct CMap<'a> {
     #[arr_len_src = "num_records"]
     records: DynArr<'a, CMapEncodingRecord>,
 }
-impl<'a> ::tables::PrimaryTable for CMap<'a> {
-    fn tag() -> ::tables::TableTag {
-        ::tables::TableTag::CharacterCodeMapping
+impl<'a> PrimaryTable for CMap<'a> {
+    fn tag() -> TableTag {
+        TableTag::CharacterCodeMapping
     }
 }
 
