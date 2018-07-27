@@ -11,6 +11,8 @@ pub trait Parse<'a> {
     fn parse(buf: &'a [u8]) -> (&'a [u8], Self);
 }
 
+/// Should be considered as just a view of the file starting at some point.
+/// Does not have a defined endpoint, could go until the end of the file
 pub(crate) struct BufView<'a, T>(pub &'a [u8], pub ::std::marker::PhantomData<T>);
 impl<'a, T: Parse<'a>> Parse<'a> for BufView<'a, T> {
     fn approx_file_size() -> usize {
@@ -37,6 +39,8 @@ impl<'a, T: Parse<'a>> fmt::Debug for BufView<'a, T> {
     }
 }
 
+/// Has a defined length.
+/// It is known that the buffer it contains is made up of `sized_len` `T`s
 pub(crate) struct DynArr<'a, T>(pub &'a [u8], pub ::std::marker::PhantomData<T>);
 impl<'a, T: Parse<'a>> DynArr<'a, T> {
     pub fn at(&self, idx: usize) -> T {
