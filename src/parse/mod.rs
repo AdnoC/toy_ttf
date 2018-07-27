@@ -9,21 +9,30 @@ pub trait Parse<'a> {
 }
 
 #[derive(Debug)]
-pub(crate) struct BufView<'a>(pub &'a [u8]);
-impl<'a> Parse<'a> for BufView<'a> {
+pub(crate) struct BufView<'a, T: Parse<'a>>(pub &'a [u8], ::std::marker::PhantomData<T>);
+impl<'a, T: Parse<'a>> Parse<'a> for BufView<'a, T> {
     fn approx_file_size() -> usize {
         0 // Just captures a view the whole buffer as it was passed in
     }
     fn parse(buf: &'a [u8]) -> (&'a [u8], Self) {
-        (buf, BufView(buf))
+        use std::marker::PhantomData;
+        (buf, BufView(buf, PhantomData))
     }
 }
+impl<'a, T: Parse<'a>> BufView<'a, T> {
+    pub fn at(&self, idx: usize) -> T {
+        let sized_idx = idx * T::approx_file_size();
+        T::parse(&self.0[sized_idx..]).1
+    }
+}
+
 
 #[derive(Debug, Clone)]
 pub(crate) struct DynArr<'a, T: Parse<'a>>(pub &'a [u8], ::std::marker::PhantomData<T>);
 impl<'a, T: Parse<'a>> DynArr<'a, T> {
     pub fn at(&self, idx: usize) -> T {
-        T::parse(&self.0[idx..]).1
+        let sized_idx = idx * T::approx_file_size();
+        T::parse(&self.0[sized_idx..]).1
     }
     pub fn iter(&self) -> DynArr<'a, T> {
         DynArr(self.0.clone(), self.1.clone())

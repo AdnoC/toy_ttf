@@ -3,7 +3,7 @@ use tables::RecordIterator;
 
 #[derive(Debug, Parse)]
 pub struct CMap<'a> {
-    table: BufView<'a>,
+    table: BufView<'a, u8>,
     version: u16,
     num_records: u16,
     #[arr_len_src = "num_records"]
@@ -80,43 +80,47 @@ pub struct Format4<'a> {
     id_deltas: DynArr<'a, i16>,
     #[arr_len_src = "seg_count"]
     id_range_offsets: DynArr<'a, u16>,
-    glyph_ids: BufView<'a>, // u16
+    glyph_ids: BufView<'a, u16>,
 }
 
 impl<'a> Format4<'a> {
+    fn get_glyph_id(&self, code_point: u16, start_idx: usize, start_code: u16) -> Option<u16> {
+        let id_delta = self.id_deltas.at(start_idx);
+        let id_range_offset = self.id_range_offsets.at(start_idx);
+        if id_range_offset != 0 {
+            // We don't use pointer tricks, so we have to shift the index into
+            // the glyph_id array down based on the distance to the start of
+            // the array
+            let glyph_shift = self.seg_count - start_idx as u16;
+            let glyph_idx = id_range_offset / 2 + (code_point - start_code)
+                - glyph_shift;
+
+            let glyph_val = self.glyph_ids.at(glyph_idx as usize);
+            if glyph_val != 0 {
+                // id_delta arithmetic is modulo 2^16
+                let glyph_val = glyph_val.wrapping_add(id_delta as u16);
+                Some(glyph_val)
+            } else {
+                None
+            }
+        } else {
+            let glyph_val = (start_idx as u16).wrapping_add(id_delta as u16);
+            Some(glyph_val)
+        }
+    }
     pub fn lookup_glyph_id(&self, code_point: u16) -> Option<u16> {
-        let end_val = self.end_counts.iter()
-            .enumerate()
-            .rev()
-            .find(|(i, val)| *val < code_point);
-        unimplemented!()
-        //
-        //
-        //
-        // let end_counts_position = Self::get_end_counts_position();
-        // let seg_count = self.get_seg_count();
-        // let mut size = seg_count - 1;
-        // /// middle of array
-        // let mut index = size / 2;
-        // while size > 0 {
-        //     /// End of array
-        //     let search = end_counts_position + index * 2;
-        //     /// Get last value
-        //     let end_value = get_u16(self.0, search as usize).unwrap();
-        //     if end_value >= code_point {
-        //         let start_pos = Self::get_start_counts_position(seg_count) + 2 * index;
-        //         let start_value = get_u16(self.0, start_pos as usize).unwrap();
-        //         if start_value > code_point {
-        //             size /= 2;
-        //             index -= size;
-        //         } else {
-        //             return self.extract_glyph_id(code_point, start_value, seg_count, index);
-        //         }
-        //     } else {
-        //         size /= 2;
-        //         index += size;
-        //     }
-        // }
-        // None
+        use byteorder::{ByteOrder, BE};
+        for (idx, end_code) in self.end_counts.iter().enumerate() {
+            if end_code >= code_point {
+                let start_code = self.start_counts.at(idx);
+                if start_code <= code_point {
+                    return self.get_glyph_id(code_point, idx, start_code);
+                } else {
+                    return None
+                }
+            }
+
+        }
+        None
     }
 }
