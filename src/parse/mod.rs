@@ -9,17 +9,6 @@ pub trait Parse<'a> {
 }
 
 #[derive(Debug)]
-pub(crate) struct DynArr<'a, T: Parse<'a>>(pub &'a [u8], ::std::marker::PhantomData<T>);
-impl<'a, T: Parse<'a>> Parse<'a> for DynArr<'a, T> {
-    fn approx_file_size() -> usize {
-        T::approx_file_size()
-    }
-    fn parse(buf: &'a [u8]) -> (&'a [u8], Self) {
-        use std::marker::PhantomData;
-        (buf, DynArr(buf, PhantomData))
-    }
-}
-#[derive(Debug)]
 pub(crate) struct BufView<'a>(pub &'a [u8]);
 impl<'a> Parse<'a> for BufView<'a> {
     fn approx_file_size() -> usize {
@@ -30,41 +19,55 @@ impl<'a> Parse<'a> for BufView<'a> {
     }
 }
 
-pub(crate) use self::iter_adapters::IteratorAdapters;
-mod iter_adapters {
-    use std::iter::{Map, Rev};
-    use std::slice::Chunks;
-    // use itertools::{Itertools, IntoChunks};
-    use byteorder::{BigEndian, ByteOrder};
-
-    pub(crate) trait IteratorAdapters: Sized {
-        fn as_be_u16(&self) -> Map<Chunks<u8>, fn(&[u8]) -> u16>;
-        fn rev_as_be_u16(&self) -> Map<Rev<Chunks<u8>>, fn(&[u8]) -> u16>;
+#[derive(Debug, Clone)]
+pub(crate) struct DynArr<'a, T: Parse<'a>>(pub &'a [u8], ::std::marker::PhantomData<T>);
+impl<'a, T: Parse<'a>> Parse<'a> for DynArr<'a, T> {
+    fn approx_file_size() -> usize {
+        T::approx_file_size()
     }
-    impl<'a> IteratorAdapters for &'a [u8] {
-        fn as_be_u16(&self) -> Map<Chunks<u8>, fn(&[u8]) -> u16> {
-            self.chunks(2)
-                .map(|bytes| BigEndian::read_u16(bytes))
-        }
-        fn rev_as_be_u16(&self) -> Map<Rev<Chunks<u8>>, fn(&[u8]) -> u16> {
-            self.chunks(2)
-                .rev()
-                .map(|bytes| BigEndian::read_u16(bytes))
-        }
+    fn parse(buf: &'a [u8]) -> (&'a [u8], Self) {
+        use std::marker::PhantomData;
+        assert!(buf.len() % <T as Parse>::approx_file_size() == 0);
+        (buf, DynArr(buf, PhantomData))
     }
-    //
-    // pub(crate) struct U16Adapter<'a, I: Iterator<Item = &'a [u8]>>(I);
-    // impl<'a, I: Iterator<Item = &'a [u8]>> Iterator for U16Adapter<'a, I> {
-    //     type Item = u16;
-    //
-    //     fn next(&mut self) -> Option<u16> {
-    //         self.0.next()
-    //             .map(|bytes| BigEndian::read_u16(bytes))
-    //     }
-    // }
-    //
 }
+impl<'a, T: Parse<'a>> Iterator for DynArr<'a, T> {
+    type Item = T;
 
+    fn next(&mut self) -> Option<Self::Item> {
+        let size: usize = T::approx_file_size();
+        if self.0.len() < size {
+            return None;
+        }
+
+        let (buf, val) = T::parse(self.0);
+        self.0 = buf;
+        Some(val)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.0.len(), Some(self.0.len()))
+    }
+}
+impl<'a, T: Parse<'a>> DynArr<'a, T> {
+    pub fn iter(&self) -> DynArr<'a, T> {
+        DynArr(self.0.clone(), self.1.clone())
+    }
+}
+impl<'a, T: Parse<'a>> ::std::iter::ExactSizeIterator for DynArr<'a, T> { }
+impl<'a, T: Parse<'a>> ::std::iter::DoubleEndedIterator for DynArr<'a, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        let size: usize = T::approx_file_size();
+        if self.0.len() < size {
+            return None;
+        }
+
+        let start_point = self.0.len() - size;
+        let (_, val) = T::parse(&self.0[start_point..]);
+        self.0 = &self.0[..start_point];
+        Some(val)
+    }
+}
 
 // TODO: Use to verify font tables
 #[allow(dead_code)]

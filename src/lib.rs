@@ -51,6 +51,8 @@ extern crate widestring;
 
 extern crate byteorder;
 
+extern crate itertools;
+
 #[macro_use]
 extern crate parse_derive;
 
