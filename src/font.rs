@@ -1,5 +1,6 @@
 use tables::{ParseTableError, PrimaryTable, ParseTableErrorInner};
 use tables::font_directory::FontDirectory;
+// use tables::loca::Loca;
 use parse::font_directory::parse_font_directory;
 use parse::Parse;
 
@@ -31,6 +32,9 @@ impl<'a> Font<'a> {
             .map(|record| &self.buf[(record.offset as usize)..])
     }
 
+    // pub fn loca_table(&self) -> Option<Loca<'a>> {
+    //     unimplemented!()
+    // }
 }
 
 
