@@ -2,6 +2,8 @@ mod name;
 pub mod primitives;
 pub(crate) mod font_directory;
 
+use std::fmt;
+
 pub trait Parse<'a> {
     /// Size of the object when serialized in the file
     fn approx_file_size() -> usize;
@@ -9,7 +11,7 @@ pub trait Parse<'a> {
 }
 
 #[derive(Debug)]
-pub(crate) struct BufView<'a, T: Parse<'a>>(pub &'a [u8], ::std::marker::PhantomData<T>);
+pub(crate) struct BufView<'a, T>(pub &'a [u8], ::std::marker::PhantomData<T>);
 impl<'a, T: Parse<'a>> Parse<'a> for BufView<'a, T> {
     fn approx_file_size() -> usize {
         0 // Just captures a view the whole buffer as it was passed in
@@ -28,7 +30,7 @@ impl<'a, T: Parse<'a>> BufView<'a, T> {
 
 
 #[derive(Debug, Clone)]
-pub(crate) struct DynArr<'a, T: Parse<'a>>(pub &'a [u8], ::std::marker::PhantomData<T>);
+pub(crate) struct DynArr<'a, T>(pub &'a [u8], ::std::marker::PhantomData<T>);
 impl<'a, T: Parse<'a>> DynArr<'a, T> {
     pub fn at(&self, idx: usize) -> T {
         let sized_idx = idx * T::approx_file_size();
