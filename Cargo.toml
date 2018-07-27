@@ -12,6 +12,7 @@ byte-slice-cast = "0.2"
 encoding = "0.2"
 byteorder = "1.2"
 parse_derive = {path = "parse_derive"}
+itertools = "0.7"
 
 [dev-dependencies]
 byte_conv = "0.1"

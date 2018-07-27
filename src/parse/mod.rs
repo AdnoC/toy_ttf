@@ -30,6 +30,42 @@ impl<'a> Parse<'a> for BufView<'a> {
     }
 }
 
+pub(crate) use self::iter_adapters::IteratorAdapters;
+mod iter_adapters {
+    use std::iter::{Map, Rev};
+    use std::slice::Chunks;
+    // use itertools::{Itertools, IntoChunks};
+    use byteorder::{BigEndian, ByteOrder};
+
+    pub(crate) trait IteratorAdapters: Sized {
+        fn as_be_u16(&self) -> Map<Chunks<u8>, fn(&[u8]) -> u16>;
+        fn rev_as_be_u16(&self) -> Map<Rev<Chunks<u8>>, fn(&[u8]) -> u16>;
+    }
+    impl<'a> IteratorAdapters for &'a [u8] {
+        fn as_be_u16(&self) -> Map<Chunks<u8>, fn(&[u8]) -> u16> {
+            self.chunks(2)
+                .map(|bytes| BigEndian::read_u16(bytes))
+        }
+        fn rev_as_be_u16(&self) -> Map<Rev<Chunks<u8>>, fn(&[u8]) -> u16> {
+            self.chunks(2)
+                .rev()
+                .map(|bytes| BigEndian::read_u16(bytes))
+        }
+    }
+    //
+    // pub(crate) struct U16Adapter<'a, I: Iterator<Item = &'a [u8]>>(I);
+    // impl<'a, I: Iterator<Item = &'a [u8]>> Iterator for U16Adapter<'a, I> {
+    //     type Item = u16;
+    //
+    //     fn next(&mut self) -> Option<u16> {
+    //         self.0.next()
+    //             .map(|bytes| BigEndian::read_u16(bytes))
+    //     }
+    // }
+    //
+}
+
+
 // TODO: Use to verify font tables
 #[allow(dead_code)]
 fn table_check_sum(table: &[u32]) -> u32 {
