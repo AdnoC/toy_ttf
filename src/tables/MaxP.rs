@@ -1,4 +1,4 @@
-use parse::{Parse, BufView, DynArr};
+use parse::{Parse, BufView};
 use parse::primitives::Fixed;
 use tables::{PrimaryTable, TableTag};
 
