@@ -43,7 +43,8 @@ impl<'a> Glyf<'a> {
                 coords,
             })
         } else {
-            Description::Composite // TODO
+            unimplemented!()
+            // Description::Composite // TODO
         };
 
         Some(Glyph {
@@ -53,7 +54,7 @@ impl<'a> Glyf<'a> {
 }
 
 #[derive(Debug, Parse)]
-struct Header {
+pub struct Header {
     number_of_contours: i16,
     x_min: i16,
     y_min: i16,
@@ -61,17 +62,17 @@ struct Header {
     y_max: i16,
 }
 
-struct Glyph<'a> {
+pub struct Glyph<'a> {
     header: Header,
     desc: Description<'a>,
 }
 
-enum Description<'a> {
+pub enum Description<'a> {
     Simple(SimpleGlyph<'a>),
     Composite, // TODO
 }
 
-struct SimpleGlyph<'a> {
+pub(crate) struct SimpleGlyph<'a> {
     end_points_of_contours: DynArr<'a, u16>,
     instruction_length: u16,
     instructions: DynArr<'a, u8>,
