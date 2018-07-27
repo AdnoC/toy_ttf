@@ -1,12 +1,12 @@
-pub mod name;
-pub mod head;
 pub mod cmap;
-pub mod maxp;
-pub mod loca;
 pub mod font_directory;
+pub mod head;
+pub mod loca;
+pub mod maxp;
+pub mod name;
 
 pub enum ParseTableErrorInner {
-    TableNotFound
+    TableNotFound,
 }
 pub type ParseTableError<'a> = ::nom::Err<&'a [u8], ParseTableErrorInner>;
 pub trait PrimaryTable {
@@ -22,7 +22,7 @@ impl<'a, T: ::parse::Parse<'a>> Iterator for RecordIterator<'a, T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        use ::parse::Parse;
+        use parse::Parse;
 
         if self.num_left < 1 {
             return None;
@@ -37,29 +37,28 @@ impl<'a, T: ::parse::Parse<'a>> Iterator for RecordIterator<'a, T> {
     }
 }
 
-
 // https://stackoverflow.com/questions/42199727/how-to-construct-const-integers-from-literal-byte-expressions
 #[cfg(target_endian = "big")]
 #[macro_export]
 macro_rules! u32_code {
     ($w:expr) => {
-        ((($w[3] as u32) <<  0) |
-         (($w[2] as u32) <<  8) |
-         (($w[1] as u32) << 16) |
-         (($w[0] as u32) << 24) |
-         ((*$w as [u8; 4])[0] as u32 * 0))
-    }
+        ((($w[3] as u32) << 0)
+            | (($w[2] as u32) << 8)
+            | (($w[1] as u32) << 16)
+            | (($w[0] as u32) << 24)
+            | ((*$w as [u8; 4])[0] as u32 * 0))
+    };
 }
 #[cfg(target_endian = "little")]
 #[macro_export]
 macro_rules! u32_code {
     ($w:expr) => {
-        ((($w[0] as u32) <<  0) |
-         (($w[1] as u32) <<  8) |
-         (($w[2] as u32) << 16) |
-         (($w[3] as u32) << 24) |
-         ((*$w as [u8; 4])[0] as u32 * 0))
-    }
+        ((($w[0] as u32) << 0)
+            | (($w[1] as u32) << 8)
+            | (($w[2] as u32) << 16)
+            | (($w[3] as u32) << 24)
+            | ((*$w as [u8; 4])[0] as u32 * 0))
+    };
 }
 
 // Varius tags: http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=IWS-AppendixC

@@ -24,7 +24,7 @@ impl<'a> CMap<'a> {
             _marker: PhantomData,
         }
     }
-    // fn formats(&self) -> 
+    // fn formats(&self) ->
     pub fn format4(&self) -> Option<Format4<'a>> {
         self.encoding_records()
             .map(|record| record.offset as usize)
@@ -58,7 +58,9 @@ enum CMapMappings<'a> {
     // Format14(Format14A,)
 }
 
-fn halve_u16(val: u16) -> u16 { val / 2 }
+fn halve_u16(val: u16) -> u16 {
+    val / 2
+}
 
 #[derive(Debug, Parse)]
 pub struct Format4<'a> {
@@ -92,8 +94,7 @@ impl<'a> Format4<'a> {
             // the glyph_id array down based on the distance to the start of
             // the array
             let glyph_shift = self.seg_count - start_idx as u16;
-            let glyph_idx = id_range_offset / 2 + (code_point - start_code)
-                - glyph_shift;
+            let glyph_idx = id_range_offset / 2 + (code_point - start_code) - glyph_shift;
 
             let glyph_val = self.glyph_ids.at(glyph_idx as usize);
             if glyph_val != 0 {
@@ -118,10 +119,9 @@ impl<'a> Format4<'a> {
                 if start_code <= code_point {
                     return self.get_glyph_id(code_point, idx, start_code);
                 } else {
-                    return None
+                    return None;
                 }
             }
-
         }
         None
     }
@@ -129,9 +129,9 @@ impl<'a> Format4<'a> {
 
 #[cfg(test)]
 mod tests {
-    use test_utils::font_buf;
-    use font::Font;
     use super::*;
+    use font::Font;
+    use test_utils::font_buf;
 
     #[test]
     fn cmap_primary() {
@@ -153,27 +153,27 @@ mod tests {
             CMapEncodingRecord {
                 platform_id: 0,
                 platform_specific_id: 3,
-                offset: 44
+                offset: 44,
             },
             CMapEncodingRecord {
                 platform_id: 0,
                 platform_specific_id: 10,
-                offset: 2100
+                offset: 2100,
             },
             CMapEncodingRecord {
                 platform_id: 1,
                 platform_specific_id: 0,
-                offset: 5188
+                offset: 5188,
             },
             CMapEncodingRecord {
                 platform_id: 3,
                 platform_specific_id: 1,
-                offset: 44
+                offset: 44,
             },
             CMapEncodingRecord {
                 platform_id: 3,
                 platform_specific_id: 10,
-                offset: 2100
+                offset: 2100,
             },
         ];
 
@@ -202,8 +202,6 @@ mod tests {
         assert_eq!(f4.id_deltas.0.len(), 510);
         assert_eq!(f4.id_range_offsets.0.len(), 510);
         assert_eq!(f4.glyph_ids.0.len(), 321944);
-
-
     }
 
     #[test]

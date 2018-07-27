@@ -1,5 +1,5 @@
-use parse::{Parse, DynArr};
 use parse::primitives::{Fixed, LongDateTime};
+use parse::{DynArr, Parse};
 use tables::{PrimaryTable, TableTag};
 
 #[derive(Debug, Parse, PartialEq)]
@@ -21,7 +21,7 @@ pub struct Head {
     lowest_recPPEM: u16,
     font_direction_hint: i16,
     pub(crate) index_to_loc_format: IndexToLocFormat,
-    glyph_data_format: i16
+    glyph_data_format: i16,
 }
 
 impl PrimaryTable for Head {
@@ -38,11 +38,10 @@ pub enum IndexToLocFormat {
 }
 derive_parse_from_primitive!(IndexToLocFormat, i16);
 
-
 #[cfg(test)]
 mod tests {
-    use font::Font;
     use super::Head;
+    use font::Font;
     use test_utils::font_buf;
 
     #[test]
@@ -70,7 +69,7 @@ mod tests {
             lowest_recPPEM: 8,
             font_direction_hint: 0,
             index_to_loc_format: 1,
-            glyph_data_format: 0
+            glyph_data_format: 0,
         };
 
         assert_eq!(head, expected);

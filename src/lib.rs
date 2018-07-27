@@ -4,7 +4,6 @@
 // Microsoft OpenType Spec
 // https://docs.microsoft.com/en-us/typography/opentype/spec/otff
 
-
 // TODO: New plan
 //
 // Don't copy anything with variable length
@@ -60,8 +59,8 @@ extern crate parse_derive;
 
 #[macro_use]
 mod parse;
-pub mod tables;
 pub mod font;
+pub mod tables;
 
 #[cfg(test)]
 pub(crate) mod test_utils {
@@ -72,10 +71,9 @@ pub(crate) mod test_utils {
         load_font_buf(SANS_MONO)
     }
     pub fn load_font_buf(name: &str) -> Vec<u8> {
-
         use std::fs::File;
-        use std::io::BufReader;
         use std::io::prelude::*;
+        use std::io::BufReader;
 
         let file = File::open(name).expect("unable to open file");
 

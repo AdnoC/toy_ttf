@@ -1,5 +1,5 @@
-use parse::{Parse, BufView};
 use parse::primitives::Fixed;
+use parse::{BufView, Parse};
 use tables::{PrimaryTable, TableTag};
 
 #[derive(Debug, Parse)]
@@ -26,7 +26,9 @@ impl<'a> MaxP<'a> {
     pub fn version_1_ext(&self) -> Option<MaxPV1Ext> {
         if self.is_version_1() {
             Some(self.ext_start.at(0))
-        } else { None }
+        } else {
+            None
+        }
     }
 }
 
@@ -49,8 +51,8 @@ pub struct MaxPV1Ext {
 
 #[cfg(test)]
 mod test {
-    use font::Font;
     use super::{MaxP, MaxPV1Ext};
+    use font::Font;
     use test_utils::font_buf;
 
     #[test]
@@ -77,7 +79,7 @@ mod test {
             max_stack_elements: 1367,
             max_size_Of_instructions: 273,
             max_component_elements: 5,
-            max_component_depth: 4
+            max_component_depth: 4,
         };
 
         assert_eq!(maxp.version_1_ext(), Some(expect_v1_ext));

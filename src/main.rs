@@ -1,6 +1,5 @@
 extern crate toy_ttf;
 
-
 #[allow(dead_code)]
 const SERIF: &'static str = "fonts/DejaVuSerif.ttf";
 #[allow(dead_code)]
@@ -13,8 +12,8 @@ const ROBOTO: &'static str = "fonts/Roboto-Regular.ttf";
 fn main() {
     use toy_ttf::font::Font;
     use toy_ttf::tables::cmap::CMap;
-    use toy_ttf::tables::maxp::MaxP;
     use toy_ttf::tables::head::Head;
+    use toy_ttf::tables::maxp::MaxP;
     // let font_buf = load_file(ROBOTO);
     let font_buf = load_file(SANS_MONO);
     // toy_ttf::parse::load_font(&font_buf);
@@ -39,8 +38,8 @@ fn main() {
 
 fn load_file(name: &str) -> Vec<u8> {
     use std::fs::File;
-    use std::io::BufReader;
     use std::io::prelude::*;
+    use std::io::BufReader;
 
     let file = File::open(name).expect("unable to open file");
 

@@ -1,7 +1,7 @@
-use widestring::WideString;
-use std::str::Utf8Error;
 #[allow(unused_imports)]
 use byte_slice_cast::{AsSliceOf, Error};
+use std::str::Utf8Error;
+use widestring::WideString;
 
 // TODO: Handle format 1 name tables
 
@@ -10,15 +10,18 @@ use byte_slice_cast::{AsSliceOf, Error};
 pub enum NameString {
     Unicode(String),
     Microsoft(WideString),
-    Other(Vec<u8>)
+    Other(Vec<u8>),
 }
 impl ::std::fmt::Debug for NameString {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         use self::NameString::*;
         match self {
             Unicode(name) => f.debug_tuple("Unicode").field(name).finish(),
-            Microsoft(name) => f.debug_tuple("Microsoft").field(&name.to_string_lossy()).finish(),
-            Other(raw_name) => f.debug_tuple("Other").field(raw_name).finish()
+            Microsoft(name) => f
+                .debug_tuple("Microsoft")
+                .field(&name.to_string_lossy())
+                .finish(),
+            Other(raw_name) => f.debug_tuple("Other").field(raw_name).finish(),
         }
     }
 }
@@ -32,10 +35,12 @@ impl NameString {
             .map(|s| NameString::Unicode(s))
     }
 
-    pub(crate) fn new_microsoft_from_raw(s: &[u8]) -> Result<NameString, Error> { // TODO: Make a better error
+    pub(crate) fn new_microsoft_from_raw(s: &[u8]) -> Result<NameString, Error> {
+        // TODO: Make a better error
 
         let manual_convert = |s: &[u8]| {
-            let wchar_buf: Vec<u16> = s.chunks(2)
+            let wchar_buf: Vec<u16> = s
+                .chunks(2)
                 .map(|bytes| (bytes[0], bytes[1]))
                 .map(|(hi, lo)| (hi as u16) << 8 | lo as u16)
                 .collect();
@@ -102,7 +107,7 @@ pub enum NameIdentifier {
     LicenseUrl = 14,
     Reserved1 = 15,
     PreferredFontFamily = 16,
-    PreferredFontSubfamily  = 17,
+    PreferredFontSubfamily = 17,
     CompatibleFull = 18, // Mac only
     SampleText = 19,
     PostscriptCid = 20,

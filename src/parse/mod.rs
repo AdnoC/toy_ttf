@@ -37,7 +37,6 @@ impl<'a, T: Parse<'a>> fmt::Debug for BufView<'a, T> {
     }
 }
 
-
 pub(crate) struct DynArr<'a, T>(pub &'a [u8], pub ::std::marker::PhantomData<T>);
 impl<'a, T: Parse<'a>> DynArr<'a, T> {
     pub fn at(&self, idx: usize) -> T {
@@ -76,7 +75,7 @@ impl<'a, T: Parse<'a>> Iterator for DynArr<'a, T> {
         (self.0.len(), Some(self.0.len()))
     }
 }
-impl<'a, T: Parse<'a>> ::std::iter::ExactSizeIterator for DynArr<'a, T> { }
+impl<'a, T: Parse<'a>> ::std::iter::ExactSizeIterator for DynArr<'a, T> {}
 impl<'a, T: Parse<'a>> ::std::iter::DoubleEndedIterator for DynArr<'a, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
         let size: usize = T::approx_file_size();
@@ -120,7 +119,8 @@ fn table_check_sum(table: &[u32]) -> u32 {
 }
 
 pub fn load_font(font_buf: &[u8]) {
-    { // TESTING
+    {
+        // TESTING
         test_parse(font_buf).expect("Test parse failed");
 
         // let font_buf = &font_buf[0..1024];

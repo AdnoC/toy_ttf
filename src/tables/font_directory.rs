@@ -8,8 +8,7 @@ pub struct FontDirectory<'file> {
 
 impl<'a> FontDirectory<'a> {
     pub fn table_record<T: PrimaryTable>(&self) -> Option<TableDirRecord> {
-        self.table_records()
-            .find(|record| record.tag == T::tag())
+        self.table_records().find(|record| record.tag == T::tag())
     }
     pub fn table_records(&self) -> TableRecords<'a> {
         TableRecords {
@@ -58,16 +57,16 @@ pub struct TableDirRecord {
 pub struct OffsetSubtable {
     pub scaler_type: ScalerType,
     pub num_tables: u16,
-    pub search_range: u16, // (max power of two that is <= num_tables) * 16
+    pub search_range: u16,   // (max power of two that is <= num_tables) * 16
     pub entry_selector: u16, // log_2(max power of two that is <= num_tables)
-    pub range_shift: u16, // num_tables * 16 - search_range
+    pub range_shift: u16,    // num_tables * 16 - search_range
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ScalerType {
-    TTF, // 'true'
+    TTF,        // 'true'
     PostScript, // 'typ1'
-    OpenType, // 'OTTO'
+    OpenType,   // 'OTTO'
 }
 
 #[cfg(test)]
@@ -77,8 +76,8 @@ mod tests {
     fn load_file() -> Vec<u8> {
         let name = "fonts/DejaVuSansMono.ttf";
         use std::fs::File;
-        use std::io::BufReader;
         use std::io::prelude::*;
+        use std::io::BufReader;
 
         let file = File::open(name).expect("unable to open file");
 

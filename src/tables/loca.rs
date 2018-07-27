@@ -1,4 +1,4 @@
-use parse::{Parse, DynArr};
+use parse::{DynArr, Parse};
 use tables::{PrimaryTable, TableTag};
 
 /// Not `Parse`-able since it requires outside information

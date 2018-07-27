@@ -1,14 +1,14 @@
 use nom::{be_u16, be_u32, IResult};
 use num_traits::FromPrimitive;
 
-
-use tables::TableTag;
 use tables::font_directory::*;
+use tables::TableTag;
 
 pub fn parse_font_directory(i: &[u8]) -> IResult<&[u8], FontDirectory> {
     let (table_dir_start, offsets) = try_parse!(i, parse_offset_subtable);
     let font_dir = FontDirectory {
-        offsets, table_dir_start
+        offsets,
+        table_dir_start,
     };
 
     Ok((table_dir_start, font_dir))
@@ -21,7 +21,6 @@ pub fn parse_font_directory(i: &[u8]) -> IResult<&[u8], FontDirectory> {
 //            (FontDirectory { offsets, table_dirs })
 //        )
 // );
-
 
 named_args!(parse_table_directory(num_entries: u16)<TableDirectory>,
 map!(
@@ -39,26 +38,31 @@ named!(pub table_directory_record<TableDirRecord>,
        )
 );
 
-named!(table_tag<TableTag>,
-       map_opt!(::nom::le_u32,
-                TableTag::from_u32)
+named!(
+    table_tag<TableTag>,
+    map_opt!(::nom::le_u32, TableTag::from_u32)
 );
 
-
-named!(parse_offset_subtable<OffsetSubtable>,
-do_parse!(
-    scaler_type: parse_font_scaler_type >>
-    num_tables: be_u16 >>
-    search_range: be_u16 >>
-    entry_selector: be_u16 >>
-    range_shift: be_u16 >>
-    (OffsetSubtable { scaler_type, num_tables, search_range, entry_selector, range_shift })
-    // (OffsetSubtable { scaler_type, num_tables:0, search_range:0, entry_selector:0, range_shift:0 })
-)
+named!(
+    parse_offset_subtable<OffsetSubtable>,
+    do_parse!(
+        scaler_type: parse_font_scaler_type
+            >> num_tables: be_u16
+            >> search_range: be_u16
+            >> entry_selector: be_u16
+            >> range_shift: be_u16 >> (OffsetSubtable {
+            scaler_type,
+            num_tables,
+            search_range,
+            entry_selector,
+            range_shift
+        }) // (OffsetSubtable { scaler_type, num_tables:0, search_range:0, entry_selector:0, range_shift:0 })
+    )
 );
 
-named!(parse_font_scaler_type<ScalerType>,
-switch!(be_u32,
+named!(
+    parse_font_scaler_type<ScalerType>,
+    switch!(be_u32,
         0x74727565 => value!(ScalerType::TTF) |
         0x00010000 => value!(ScalerType::TTF) | // MUST be used for Windows or Adobe products
         0x74797031 => value!(ScalerType::PostScript) |
@@ -75,9 +79,8 @@ mod tests {
         ($expected:expr, $actual:expr) => {
             let val = $actual.unwrap().1;
             assert_eq!(val, $expected);
-        }
+        };
     }
-
 
     macro_rules! make_byte_slice {
         ($($val:expr),*) => {
@@ -95,12 +98,7 @@ mod tests {
     }
     #[test]
     fn parse_scaler_type() {
-        let tags = [
-            0x74727565,
-            0x00010000,
-            0x74797031,
-            0x4F54544F,
-        ];
+        let tags = [0x74727565, 0x00010000, 0x74797031, 0x4F54544F];
         let expecteds = [
             ScalerType::TTF,
             ScalerType::TTF,
