@@ -34,7 +34,7 @@ impl<'a> CMap<'a> {
     }
 }
 
-#[derive(Debug, Parse)]
+#[derive(Debug, Parse, PartialEq)]
 pub struct CMapEncodingRecord {
     platform_id: u16,
     platform_specific_id: u16,
@@ -123,5 +123,81 @@ impl<'a> Format4<'a> {
 
         }
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use test_utils::font_buf;
+    use font::Font;
+    use super::*;
+
+    fn cmap_primary() {
+        let buf = font_buf();
+        let font = Font::from_buffer(&buf).unwrap();
+        let cmap: CMap = font.get_table().unwrap();
+
+        assert_eq!(cmap.version, 0);
+        assert_eq!(cmap.num_records, 5);
+    }
+
+    fn cmap_records() {
+        let buf = font_buf();
+        let font = Font::from_buffer(&buf).unwrap();
+        let cmap: CMap = font.get_table().unwrap();
+
+        let expecteds = &[
+            CMapEncodingRecord {
+                platform_id: 0,
+                platform_specific_id: 3,
+                offset: 44
+            },
+            CMapEncodingRecord {
+                platform_id: 0,
+                platform_specific_id: 10,
+                offset: 2100
+            },
+            CMapEncodingRecord {
+                platform_id: 1,
+                platform_specific_id: 0,
+                offset: 5188
+            },
+            CMapEncodingRecord {
+                platform_id: 3,
+                platform_specific_id: 1,
+                offset: 44
+            },
+            CMapEncodingRecord {
+                platform_id: 3,
+                platform_specific_id: 10,
+                offset: 2100
+            },
+        ];
+
+        for (ref actual, expected) in cmap.encoding_records().zip(expecteds) {
+            assert_eq!(actual, expected);
+        }
+    }
+    fn cmap_format4() {
+        let buf = font_buf();
+        let font = Font::from_buffer(&buf).unwrap();
+        let cmap: CMap = font.get_table().unwrap();
+        let f4 = cmap.format4().unwrap();
+
+        assert_eq!(f4.format, 4);
+        assert_eq!(f4.length, 2056);
+        assert_eq!(f4.language, 0);
+        assert_eq!(f4.seg_count, 255);
+        assert_eq!(f4.search_range, 256);
+        assert_eq!(f4.entry_selector, 7);
+        assert_eq!(f4.range_shift, 254);
+        assert_eq!(f4.end_counts.0.len(), 510);
+        assert_eq!(f4.reserved_padding, 0);
+        assert_eq!(f4.start_counts.0.len(), 510);
+        assert_eq!(f4.id_deltas.0.len(), 510);
+        assert_eq!(f4.id_range_offsets.0.len(), 510);
+        assert_eq!(f4.glyph_ids.0.len(), 321944);
+
+
     }
 }

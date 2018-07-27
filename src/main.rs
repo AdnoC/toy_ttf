@@ -18,6 +18,9 @@ fn main() {
     let font = Font::from_buffer(&font_buf).unwrap();
     let cmap = font.get_table::<CMap>().unwrap();
     println!("{:#?}", cmap);
+    for rec in cmap.encoding_records() {
+        println!("{:#?}", rec);
+    }
     let format4 = cmap.format4().unwrap();
     println!("{:#?}", format4);
     let maxp = font.get_table::<MaxP>().unwrap();

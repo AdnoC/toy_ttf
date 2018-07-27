@@ -59,7 +59,7 @@ mod test {
 
         let buf = font_buf();
         let font = Font::from_buffer(&buf).unwrap();
-        let maxp = font.get_table::<MaxP>().unwrap();
+        let maxp: MaxP = font.get_table().unwrap();
 
         assert_eq!(maxp.version, Fixed(1, 0));
         assert_eq!(maxp.num_glyphs, 3377);
