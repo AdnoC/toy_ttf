@@ -22,6 +22,9 @@ impl<'a> Parse<'a> for BufView<'a> {
 #[derive(Debug, Clone)]
 pub(crate) struct DynArr<'a, T: Parse<'a>>(pub &'a [u8], ::std::marker::PhantomData<T>);
 impl<'a, T: Parse<'a>> DynArr<'a, T> {
+    pub fn at(&self, idx: usize) -> T {
+        T::parse(&self.0[idx..]).1
+    }
     pub fn iter(&self) -> DynArr<'a, T> {
         DynArr(self.0.clone(), self.1.clone())
     }
