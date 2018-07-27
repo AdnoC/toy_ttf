@@ -21,6 +21,11 @@ impl<'a> Parse<'a> for BufView<'a> {
 
 #[derive(Debug, Clone)]
 pub(crate) struct DynArr<'a, T: Parse<'a>>(pub &'a [u8], ::std::marker::PhantomData<T>);
+impl<'a, T: Parse<'a>> DynArr<'a, T> {
+    pub fn iter(&self) -> DynArr<'a, T> {
+        DynArr(self.0.clone(), self.1.clone())
+    }
+}
 impl<'a, T: Parse<'a>> Parse<'a> for DynArr<'a, T> {
     fn approx_file_size() -> usize {
         T::approx_file_size()
@@ -47,11 +52,6 @@ impl<'a, T: Parse<'a>> Iterator for DynArr<'a, T> {
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         (self.0.len(), Some(self.0.len()))
-    }
-}
-impl<'a, T: Parse<'a>> DynArr<'a, T> {
-    pub fn iter(&self) -> DynArr<'a, T> {
-        DynArr(self.0.clone(), self.1.clone())
     }
 }
 impl<'a, T: Parse<'a>> ::std::iter::ExactSizeIterator for DynArr<'a, T> { }
