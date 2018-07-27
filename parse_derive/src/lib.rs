@@ -35,23 +35,29 @@ fn parse_derive(s: Structure) -> TokenStream {
                 };
                 Some(limiter)
             } else { None };
-            let modifier = get_parse_mod(&bi);
-            if let Some(len_src) = get_array_buffer_len(&bi) {
+            let pb = if let Some(len_src) = get_array_buffer_len(&bi) {
                 quote! {
                     let (#buf_var, #name) = {
                         let len = #len_src as usize;
                         let size = len * <#ty as Parse>::approx_file_size();
                         let (buf, remain) = #buf_var.split_at(size);
                         let res = <#ty as Parse>::parse(buf);
-                        (remain, #modifier(res.1))
+                        (remain, res.1)
                     };
                 }
             } else {
                 quote! {
                     let (#buf_var, #name) = <#ty as Parse>::parse(#buf_var);
+                }
+            };
+
+            if let Some(modifier) = get_parse_mod(&bi) {
+                quote! {
+                    #pb
                     let #name = #modifier(#name);
                 }
-            }
+            } else { pb }
+
         })
         .collect();
     let parse_body = s.variants()[0].construct(|field, i| {
