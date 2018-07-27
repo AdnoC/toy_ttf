@@ -108,6 +108,7 @@ impl<'a> Format4<'a> {
             Some(glyph_val)
         }
     }
+    // TODO: Test
     pub fn lookup_glyph_id(&self, code_point: u16) -> Option<u16> {
         use byteorder::{ByteOrder, BE};
         for (idx, end_code) in self.end_counts.iter().enumerate() {

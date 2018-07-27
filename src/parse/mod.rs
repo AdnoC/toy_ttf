@@ -1,5 +1,5 @@
 mod name;
-mod primitives;
+pub mod primitives;
 pub(crate) mod font_directory;
 
 pub trait Parse<'a> {

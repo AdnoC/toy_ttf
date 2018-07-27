@@ -2,11 +2,15 @@ use parse::Parse;
 use byteorder::{BigEndian, ByteOrder};
 
 pub type ShortFrac = i16;
-pub type Fixed = (i16, i16);
 pub type FWord = i16;
 pub type UFWord = u16;
 pub type F2Dot14 = i16;
 pub type LongDateTime = i64;
+
+// Represents the number (self.0).(self.1)
+// e.g. 0.5 is (0x0000).(0x5000)
+#[derive(Debug, Parse)]
+pub struct Fixed(pub i16, pub i16);
 
 // impl<'a> Parse<'a> for &'a [u8] {
 //     fn approx_file_size() -> usize {
