@@ -8,20 +8,20 @@ pub type UFWord = u16;
 pub type F2Dot14 = i16;
 pub type LongDateTime = i64;
 
-impl<'a> Parse<'a> for &'a [u8] {
-    fn file_size(&self) -> usize {
-        self.len()
-    }
-    fn parse(buf: &'a [u8]) -> (&'a [u8], &'a [u8]) {
-        (buf, buf)
-    }
-}
+// impl<'a> Parse<'a> for &'a [u8] {
+//     fn approx_file_size() -> usize {
+//         0
+//     }
+//     fn parse(buf: &'a [u8]) -> (&'a [u8], &'a [u8]) {
+//         (buf, buf)
+//     }
+// }
 
 macro_rules! impl_primitives {
     ($($prim:ty : $parser:expr),*) => {
         $(
             impl<'a> Parse<'a> for $prim {
-                fn file_size(&self) -> usize {
+                fn approx_file_size() -> usize {
                     use std::mem::size_of;
                     size_of::<$prim>()
                 }

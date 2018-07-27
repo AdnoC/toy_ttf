@@ -4,8 +4,30 @@ pub(crate) mod font_directory;
 
 pub trait Parse<'a> {
     /// Size of the object when serialized in the file
-    fn file_size(&self) -> usize;
+    fn approx_file_size() -> usize;
     fn parse(buf: &'a [u8]) -> (&'a [u8], Self);
+}
+
+#[derive(Debug)]
+pub(crate) struct DynArr<'a, T: Parse<'a>>(pub &'a [u8], ::std::marker::PhantomData<T>);
+impl<'a, T: Parse<'a>> Parse<'a> for DynArr<'a, T> {
+    fn approx_file_size() -> usize {
+        T::approx_file_size()
+    }
+    fn parse(buf: &'a [u8]) -> (&'a [u8], Self) {
+        use std::marker::PhantomData;
+        (buf, DynArr(buf, PhantomData))
+    }
+}
+#[derive(Debug)]
+pub(crate) struct BufView<'a>(pub &'a [u8]);
+impl<'a> Parse<'a> for BufView<'a> {
+    fn approx_file_size() -> usize {
+        0 // Just captures a view the whole buffer as it was passed in
+    }
+    fn parse(buf: &'a [u8]) -> (&'a [u8], Self) {
+        (buf, BufView(buf))
+    }
 }
 
 // TODO: Use to verify font tables

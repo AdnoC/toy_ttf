@@ -9,8 +9,14 @@ const SANS: &'static str = "fonts/DejaVuSans.ttf";
 const SANS_MONO: &'static str = "fonts/DejaVuSansMono.ttf";
 
 fn main() {
+    use toy_ttf::font::Font;
+    use toy_ttf::tables::cmap::CMap;
     let font_buf = load_file(SANS_MONO);
     // toy_ttf::parse::load_font(&font_buf);
+
+    let font = Font::from_buffer(&font_buf).unwrap();
+    let cmap = font.get_table::<CMap>().unwrap();
+    let format4 = cmap.format4().unwrap();
 }
 
 fn load_file(name: &str) -> Vec<u8> {

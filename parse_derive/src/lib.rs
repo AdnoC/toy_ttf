@@ -13,18 +13,8 @@ use synstructure::{BindingInfo, Structure};
 
 #[allow(needless_pass_by_value)]
 fn parse_derive(s: Structure) -> TokenStream {
-    let buf_var = quote! { buf };
-
-    for var in s.variants() {
-        let mut found_dyn_sized = false;
-        for bind in var.bindings() {
-            if is_array_buffer(bind) {
-                found_dyn_sized = true;
-            } else if found_dyn_sized {
-                panic!("Dynamically sized fields must be last");
-            }
-        }
-    }
+    let buf_var = quote! { _buf };
+    let init_buf_var = quote! { _init_buf };
 
     let parse_main: Vec<_> = s.variants()[0]
         .bindings()
@@ -34,22 +24,32 @@ fn parse_derive(s: Structure) -> TokenStream {
             let ty = &bi.ast().ty;
             let name = bi.ast().ident.clone().unwrap_or_else(|| ident_for_index(i));
 
+            let limit_length = if is_len_src(&bi) {
+                let limiter = quote! {
+                    let #buf_var = {
+                        let total_len = #name;
+                        let eaten = #buf_var.as_ptr() as usize - #init_buf_var.as_ptr() as usize;
+                        let remain = total_len - eaten;
+                        &#buf_var[..remain]
+                    };
+                };
+                Some(limiter)
+            } else { None };
+            let modifier = get_parse_mod(&bi);
             if let Some(len_src) = get_array_buffer_len(&bi) {
                 quote! {
-                    let res = {
+                    let (#buf_var, #name) = {
                         let len = #len_src as usize;
-                        let buf = &#buf_var[0..len];
+                        let size = len * <#ty as Parse>::approx_file_size();
+                        let (buf, remain) = #buf_var.split_at(size);
                         let res = <#ty as Parse>::parse(buf);
-                        (&#buf_var[len..], res.1)
+                        (remain, #modifier(res.1))
                     };
-                    let #buf_var = res.0;
-                    let #name = res.1;
                 }
             } else {
                 quote! {
-                    let res = <#ty as Parse>::parse(#buf_var);
-                    let #buf_var = res.0;
-                    let #name = res.1;
+                    let (#buf_var, #name) = <#ty as Parse>::parse(#buf_var);
+                    let #name = #modifier(#name);
                 }
             }
         })
@@ -61,9 +61,13 @@ fn parse_derive(s: Structure) -> TokenStream {
         }
     });
 
-    let size_body = s.fold(quote!(0), |acc, bi| {
+    let size_body = s.variants()[0]
+        .bindings()
+        .iter()
+        .fold(quote!(0), |acc, bi| {
+        let ty = &bi.ast().ty;
         quote! {
-            #acc + #bi.file_size()
+            #acc + <#ty as Parse>::approx_file_size()
         }
     });
 
@@ -90,13 +94,12 @@ fn parse_derive(s: Structure) -> TokenStream {
     let name = &s.ast().ident;
     let real_impl = quote! {
         impl #impl_gen Parse<#parse_lt> for #name #ty_gen #where_clause {
-            fn file_size(&self) -> usize {
-                match *self {
-                    #size_body
-                }
+            fn approx_file_size() -> usize {
+                #size_body
             }
 
             fn parse(#buf_var: &#parse_lt [u8]) -> (&#parse_lt [u8], Self) {
+                let #init_buf_var = #buf_var;
                 #(#parse_main)*
 
                 let val = #parse_body;
@@ -138,6 +141,26 @@ fn get_array_buffer_len(bi: &BindingInfo) -> Option<syn::Ident> {
         .map(|name| name.value())
         .map(|name| Ident::new(&name, Span::call_site()))
 }
+fn get_parse_mod(bi: &BindingInfo) -> Option<syn::Ident> {
+    use proc_macro2::{Ident, Span};
+    use syn::{Lit, Meta};
+    bi.ast()
+        .attrs
+        .iter()
+        .filter_map(|attr| attr.interpret_meta())
+        .find(|meta| meta.name() == "parse_mod")
+        .map(|meta| match meta {
+            Meta::NameValue(name_val) => name_val.lit,
+            _ => panic!("arr_len_src needs a field name"),
+        })
+        .map(|lit| match lit {
+            Lit::Str(name) => name,
+            _ => panic!("arr_len_src needs a field name"),
+        })
+        .map(|name| name.value())
+        .map(|name| Ident::new(&name, Span::call_site()))
+}
+
 fn is_array_buffer(bi: &BindingInfo) -> bool {
     bi.ast()
         .attrs
@@ -147,10 +170,19 @@ fn is_array_buffer(bi: &BindingInfo) -> bool {
             None => false,
         })
 }
+fn is_len_src(bi: &BindingInfo) -> bool {
+    bi.ast()
+        .attrs
+        .iter()
+        .any(|attr| match attr.interpret_meta() {
+            Some(meta) => meta.name() == "len_src",
+            None => false,
+        })
+}
 
 fn ident_for_index(i: usize) -> syn::Ident {
     use proc_macro2::{Ident, Span};
     Ident::new(&format!("__field_{}", i), Span::call_site())
 }
 
-decl_derive!([Parse, attributes(arr_len_src)] => parse_derive);
+decl_derive!([Parse, attributes(arr_len_src, parse_mod, len_src)] => parse_derive);

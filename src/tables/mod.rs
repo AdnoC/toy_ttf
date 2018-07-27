@@ -10,6 +10,31 @@ pub trait PrimaryTable {
     fn tag() -> TableTag;
 }
 
+pub struct RecordIterator<'file, T: ::parse::Parse<'file>> {
+    next_record: &'file [u8],
+    num_left: u16,
+    _marker: ::std::marker::PhantomData<T>,
+}
+impl<'a, T: ::parse::Parse<'a>> Iterator for RecordIterator<'a, T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        use ::parse::Parse;
+
+        if self.num_left < 1 {
+            return None;
+        }
+
+        let (next_record, record) = T::parse(self.next_record);
+
+        self.num_left -= 1;
+        self.next_record = next_record;
+
+        Some(record)
+    }
+}
+
+
 // https://stackoverflow.com/questions/42199727/how-to-construct-const-integers-from-literal-byte-expressions
 #[cfg(target_endian = "big")]
 #[macro_export]
