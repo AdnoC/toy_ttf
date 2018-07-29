@@ -63,8 +63,8 @@ pub struct Header {
 }
 
 pub struct Glyph<'a> {
-    header: Header,
-    desc: Description<'a>,
+    pub header: Header,
+    pub desc: Description<'a>,
 }
 impl<'a> Glyph<'a> {
     // TODO: Name for compoind glyph
@@ -75,8 +75,6 @@ impl<'a> Glyph<'a> {
             Description::Simple(ref simp) => simp,
             _ => unimplemented!()
         };
-
-        // TODO: Test
 
         let flags = simp.coords.cast::<SimpleFlags>();
         let mut idx = 0;

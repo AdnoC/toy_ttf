@@ -2,6 +2,7 @@ use parse::font_directory::parse_font_directory;
 use parse::Parse;
 use tables::font_directory::FontDirectory;
 use tables::loca::Loca;
+use tables::glyf::Glyph;
 use tables::{ParseTableError, ParseTableErrorInner, PrimaryTable};
 
 pub struct Font<'file> {
@@ -23,6 +24,21 @@ impl<'a> Font<'a> {
         self.font_dir
             .table_record::<T>()
             .map(|record| &self.buf[(record.offset as usize)..])
+    }
+
+    pub fn get_glyph(&self, code_point: char) -> Option<Glyph<'a>> {
+        use tables::cmap::CMap;
+        use tables::glyf::Glyf;
+        use std::u8;
+        assert!(code_point < u8::MAX as char); // Only ascii for now
+        let loca: Loca = self.get_table()?;
+        let cmap: CMap = self.get_table()?;
+        let format4 = cmap.format4()?;
+        let glyf: Glyf = self.get_table()?;
+
+        let glyph_id = format4.lookup_glyph_id(code_point as u8 as u16)?;
+        let glyph_offset = loca.at(glyph_id as usize);
+        glyf.at_offset(glyph_offset as usize)
     }
 
 }
