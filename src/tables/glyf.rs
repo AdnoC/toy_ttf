@@ -56,10 +56,10 @@ impl<'a> Glyf<'a> {
 #[derive(Debug, Parse)]
 pub struct Header {
     number_of_contours: i16,
-    x_min: i16,
-    y_min: i16,
-    x_max: i16,
-    y_max: i16,
+    pub x_min: i16,
+    pub y_min: i16,
+    pub x_max: i16,
+    pub y_max: i16,
 }
 
 pub struct Glyph<'a> {

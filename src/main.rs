@@ -1,4 +1,5 @@
 extern crate toy_ttf;
+use toy_ttf::tables::glyf::Glyph;
 
 #[allow(dead_code)]
 const SERIF: &'static str = "fonts/DejaVuSerif.ttf";
@@ -10,8 +11,6 @@ const SANS_MONO: &'static str = "fonts/DejaVuSansMono.ttf";
 const ROBOTO: &'static str = "fonts/Roboto-Regular.ttf";
 
 fn main() {
-    use toy_ttf::render::*;
-
     use toy_ttf::font::{GetTable, Font};
     use toy_ttf::tables::cmap::CMap;
     use toy_ttf::tables::head::Head;
@@ -24,20 +23,27 @@ fn main() {
 
     let font = Font::from_buffer(&font_buf).unwrap();
     let glyph = font.get_glyph('S').unwrap();
+    draw_glyph(glyph);
 
-    let mut x_max = 0;
-    let mut y_max = 0;
-    for coord in glyph.coordinates() {
-        if coord.x > x_max {
-            x_max = coord.x;
-        }
-        if coord.y > y_max {
-            y_max = coord.y;
+}
+
+fn draw_glyph<'a>(glyph: Glyph<'a>) {
+    use toy_ttf::render::*;
+
+    const PADDING: u32 = 50;
+    let width = glyph.header.x_max - glyph.header.x_min;
+    let height = glyph.header.y_max - glyph.header.y_min;
+    let x_shift = (PADDING as i16 / 2) - glyph.header.x_min;
+    let y_shift = (PADDING as i16 / 2) - glyph.header.y_min;
+
+    fn shift_point(p: Point, x_shift: i16, y_shift: i16) -> Point {
+        Point {
+            x: p.x + x_shift as f32,
+            y: p.y + y_shift as f32,
         }
     }
-    println!("img dims = ({}, {})", x_max, y_max);
 
-    let mut raster = Raster::new(x_max as u32 + 200, y_max as u32 + 200);
+    let mut raster = Raster::new(width as u32 + PADDING, height as u32 + PADDING);
 
     let first_coord = glyph.coordinates().next().unwrap();
     let mut last_coord = first_coord;
@@ -47,10 +53,12 @@ fn main() {
             x: c1.x as f32,
             y: c1.y as f32,
         };
+        let p1 = shift_point(p1, x_shift, y_shift);
         let p2 = Point {
             x: c2.x as f32,
             y: c2.y as f32,
         };
+        let p2 = shift_point(p2, x_shift, y_shift);
 
         raster.draw_line(p1, p2);
     }
@@ -59,14 +67,17 @@ fn main() {
         x: first_coord.x as f32,
         y: first_coord.y as f32,
     };
+    let p1 = shift_point(p1, x_shift, y_shift);
     let p2 = Point {
         x: last_coord.x as f32,
         y: last_coord.y as f32,
     };
+    let p2 = shift_point(p2, x_shift, y_shift);
 
     raster.draw_line(p1, p2);
     const img_file: &str = "RASTER_RESULT.bmp";
     raster.0.save(img_file).unwrap();
+
 }
 
 fn load_file(name: &str) -> Vec<u8> {
