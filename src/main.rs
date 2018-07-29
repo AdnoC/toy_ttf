@@ -42,10 +42,11 @@ fn main() {
     let glyf: Glyf = font.get_table().unwrap();
 
     let glyph_id = format4.lookup_glyph_id('A' as u8 as u16).unwrap();
+    println!("glyph_id = {}", glyph_id);
     let glyph_offset = loca.at(glyph_id as usize);
     let glyph = glyf.at_offset(glyph_offset as usize).unwrap();
-    let coords = glyph.coordinates();
-    for coord in coords {
+    println!("num = {}", glyph.coordinates().count());
+    for coord in glyph.coordinates() {
         println!("{:?}", coord);
     }
 }

@@ -85,7 +85,8 @@ impl<'a> Glyph<'a> {
         // Last point index in each countour is the highest,
         // last countour has the highest end point index. TODO: Verify
         let last_point_index_offset = simp.end_points_of_contours.len() - 1;
-        let mut points_left = simp.end_points_of_contours.at(last_point_index_offset) as usize;
+        // Plus one since the index is zero-based
+        let mut points_left = 1 + simp.end_points_of_contours.at(last_point_index_offset) as usize;
         while points_left > 0 {
             let flag = flags.at(idx);
 
@@ -119,11 +120,17 @@ impl<'a> Glyph<'a> {
         }
         let (flags_buf, rest) = flags.split_at(idx);
         let flags = DynArr(flags_buf.0, PhantomData);
-        let (xs, rest) = rest.0.split_at(xs_len);
-        let ys = &rest[..ys_len];
+        let (delta_xs, rest) = rest.0.split_at(xs_len);
+        let delta_ys = &rest[..ys_len];
 
         SimpleCoordinates {
-            flags, xs, ys
+            flags,
+            delta_xs,
+            delta_ys,
+            repeat_count: 0,
+            // First point is relative to (0,0)
+            x: 0,
+            y: 0,
         }
     }
 }
@@ -162,18 +169,94 @@ bitflags! {
 #[derive(Debug)]
 pub struct SimpleCoordinate {
     on_curve: bool,
-    x: i16,
-    y: i16,
+    x: isize,
+    y: isize,
 }
 pub struct SimpleCoordinates<'a> {
     flags: DynArr<'a, SimpleFlags>,
-    xs: &'a [u8],
-    ys: &'a [u8],
+    delta_xs: &'a [u8],
+    delta_ys: &'a [u8],
+    repeat_count: u8,
+    // coordinate values are relative to the previous point
+    x: isize,
+    y: isize,
 }
 impl<'a> Iterator for SimpleCoordinates<'a> {
     type Item = SimpleCoordinate;
 
     fn next(&mut self) -> Option<Self::Item> {
-        unimplemented!()
+        if self.flags.len() == 0 {
+            return None;
+        }
+
+        let flag = self.flags.at(0);
+
+        if self.repeat_count == 0 && flag.contains(SimpleFlags::REPEAT_FLAG) {
+            let count_buf = self.flags.split_at(1).1;
+            self.repeat_count = u8::parse(count_buf.0).1;
+        }
+
+        let on_curve = flag.contains(SimpleFlags::ON_CURVE_POINT);
+
+        let dx = if flag.contains(SimpleFlags::X_SHORT_VEC) {
+            let (rest, dx) = u8::parse(self.delta_xs);
+            let dx = dx as isize;
+            self.delta_xs = rest;
+
+            if flag.contains(SimpleFlags::POSITIVE_X_SHORT_VECTOR) {
+                dx
+            } else {
+                -dx
+            }
+        } else if !flag.contains(SimpleFlags::X_IS_SAME) {
+            let (rest, dx) = i16::parse(self.delta_xs);
+            self.delta_xs = rest;
+            dx as isize
+        } else { 0 };
+
+        let dy = if flag.contains(SimpleFlags::Y_SHORT_VEC) {
+            let (rest, dy) = u8::parse(self.delta_ys);
+            let dy = dy as isize;
+            self.delta_ys = rest;
+
+            if flag.contains(SimpleFlags::POSITIVE_Y_SHORT_VECTOR) {
+                dy
+            } else {
+                -dy
+            }
+        } else if !flag.contains(SimpleFlags::Y_IS_SAME) {
+            let (rest, dy) = i16::parse(self.delta_ys);
+            self.delta_ys = rest;
+            dy as isize
+        } else { 0 };
+
+        self.x += dx;
+        self.y += dy;
+
+        if self.repeat_count > 0 {
+            self.repeat_count -= 1;
+            // Get to the count so that we then get to the next one
+            if self.repeat_count == 0 {
+                self.flags = self.flags.split_at(1).1;
+            }
+        }
+
+        if self.repeat_count == 0 {
+            self.flags = self.flags.split_at(1).1;
+        }
+
+        Some(SimpleCoordinate {
+            on_curve,
+            x: self.x,
+            y: self.y,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn simple_coordinates() {
+        // TODO
     }
 }
