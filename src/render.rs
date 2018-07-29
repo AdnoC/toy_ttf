@@ -10,6 +10,8 @@ impl Raster {
 
     pub fn put_pixel(&mut self, x: u32, y: u32, brightness: u8) {
         use image::Luma;
+        assert!(x < self.0.width());
+        assert!(y < self.0.height());
         self.0.put_pixel(x, y, Luma { data: [brightness] });
     }
 
