@@ -29,6 +29,16 @@ impl<'a, T: Parse<'a>> BufView<'a, T> {
         let sized_idx = idx * T::approx_file_size();
         T::parse(&self.0[sized_idx..]).1
     }
+    pub fn split_at(&self, idx: usize) -> (BufView<'a, T>, BufView<'a, T>) {
+        use std::marker::PhantomData;
+        let sized_idx = idx * T::approx_file_size();
+        let (before, after) = self.0.split_at(sized_idx);
+        (BufView(before, PhantomData), BufView(after, PhantomData))
+    }
+    pub fn cast<U>(&self) -> BufView<'a, U> {
+        use std::marker::PhantomData;
+        BufView(self.0, PhantomData)
+    }
 }
 impl<'a, T: Parse<'a>> fmt::Debug for BufView<'a, T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -50,6 +60,9 @@ impl<'a, T: Parse<'a>> DynArr<'a, T> {
     }
     pub fn iter(&self) -> DynArr<'a, T> {
         self.clone()
+    }
+    pub fn len(&self) -> usize {
+        self.0.len() / T::approx_file_size()
     }
 }
 impl<'a, T: Parse<'a>> Parse<'a> for DynArr<'a, T> {
