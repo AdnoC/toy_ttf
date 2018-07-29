@@ -98,14 +98,14 @@ impl<'a> Glyph<'a> {
 
             let x_size = if flag.contains(SimpleFlags::X_SHORT_VEC) {
                 u8::approx_file_size()
-            } else if flag.contains(SimpleFlags::X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR) {
+            } else if flag.contains(SimpleFlags::X_IS_SAME) {
                 0
             } else {
                 i16::approx_file_size()
             };
             let y_size = if flag.contains(SimpleFlags::Y_SHORT_VEC) {
                 u8::approx_file_size()
-            } else if flag.contains(SimpleFlags::Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR) {
+            } else if flag.contains(SimpleFlags::Y_IS_SAME) {
                 0
             } else {
                 i16::approx_file_size()
@@ -147,12 +147,14 @@ pub struct SimpleGlyph<'a> {
 bitflags! {
     #[derive(Parse)]
     struct SimpleFlags: u8 {
-        const ON_CURVE                                     = 0b00000001;
+        const ON_CURVE_POINT                               = 0b00000001;
         const X_SHORT_VEC                                  = 0b00000010;
         const Y_SHORT_VEC                                  = 0b00000100;
         const REPEAT_FLAG                                  = 0b00001000;
-        const X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR         = 0b00010000;
-        const Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR         = 0b00100000;
+        const X_IS_SAME                                    = 0b00010000;
+        const POSITIVE_X_SHORT_VECTOR                      = 0b00010000;
+        const Y_IS_SAME                                    = 0b00100000;
+        const POSITIVE_Y_SHORT_VECTOR                      = 0b00100000;
         const RESERVED                                     = 0b11000000;
     }
 }
