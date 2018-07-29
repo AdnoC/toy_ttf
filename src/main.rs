@@ -11,36 +11,43 @@ const ROBOTO: &'static str = "fonts/Roboto-Regular.ttf";
 
 fn main() {
     use toy_ttf::render::*;
-    let mut raster = Raster::new(50, 50);
-
-    raster.draw_line(Point {x: 0., y: 0.}, Point { x: 25., y: 25. });
-    raster.0.save("RASTER_RESULT.bmp").unwrap();
-
-    // use toy_ttf::font::{GetTable, Font};
-    // use toy_ttf::tables::cmap::CMap;
-    // use toy_ttf::tables::head::Head;
-    // use toy_ttf::tables::maxp::MaxP;
-    // use toy_ttf::tables::loca::Loca;
-    // // let font_buf = load_file(ROBOTO);
-    // let font_buf = load_file(SANS_MONO);
-    // // toy_ttf::parse::load_font(&font_buf);
+    // let mut raster = Raster::new(50, 50);
     //
-    // let font = Font::from_buffer(&font_buf).unwrap();
-    //
-    // let loca: Loca = font.get_table().unwrap();
+    // raster.draw_line(Point {x: 0., y: 0.}, Point { x: 25., y: 25. });
+    // raster.0.save("RASTER_RESULT.bmp").unwrap();
+
+    use toy_ttf::font::{GetTable, Font};
+    use toy_ttf::tables::cmap::CMap;
+    use toy_ttf::tables::head::Head;
+    use toy_ttf::tables::maxp::MaxP;
+    use toy_ttf::tables::loca::Loca;
+    use toy_ttf::tables::glyf::Glyf;
+    // let font_buf = load_file(ROBOTO);
+    let font_buf = load_file(SANS_MONO);
+    // toy_ttf::parse::load_font(&font_buf);
+
+    let font = Font::from_buffer(&font_buf).unwrap();
+
+    let loca: Loca = font.get_table().unwrap();
     // println!("{:#?}", loca);
-    //
-    // let cmap: CMap = font.get_table().unwrap();
+
+    let cmap: CMap = font.get_table().unwrap();
     // println!("{:#?}", cmap);
     // for rec in cmap.encoding_records() {
     //     println!("{:#?}", rec);
     // }
-    // let format4 = cmap.format4().unwrap();
+    let format4 = cmap.format4().unwrap();
     // println!("{:#?}", format4);
-    // let maxp = font.get_table::<MaxP>().unwrap();
-    // println!("{:#?}", maxp);
-    // println!("{:#?}", maxp.version_1_ext());
-    //
+
+    let glyf: Glyf = font.get_table().unwrap();
+
+    let glyph_id = format4.lookup_glyph_id('A' as u8 as u16).unwrap();
+    let glyph_offset = loca.at(glyph_id as usize);
+    let glyph = glyf.at_offset(glyph_offset as usize).unwrap();
+    let coords = glyph.coordinates();
+    for coord in coords {
+        println!("{:?}", coord);
+    }
 }
 
 fn load_file(name: &str) -> Vec<u8> {

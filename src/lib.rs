@@ -55,6 +55,9 @@ extern crate itertools;
 extern crate image;
 
 #[macro_use]
+extern crate bitflags;
+
+#[macro_use]
 extern crate parse_derive;
 
 // NOTE: TrueType is big endian (from https://wiki.osdev.org/TrueType_Fonts)
