@@ -166,7 +166,7 @@ bitflags! {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub struct SimpleCoordinate {
     on_curve: bool,
     x: isize,
@@ -255,8 +255,44 @@ impl<'a> Iterator for SimpleCoordinates<'a> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use font::*;
+    use test_utils::font_buf;
+
     #[test]
     fn simple_coordinates() {
-        // TODO
+        use tables::cmap::CMap;
+        use tables::loca::Loca;
+        use tables::glyf::Glyf;
+
+        let expecteds = &[
+            SimpleCoordinate { on_curve: true, x: 616, y: 1315 },
+            SimpleCoordinate { on_curve: true, x: 403, y: 551 },
+            SimpleCoordinate { on_curve: true, x: 829, y: 551 },
+            SimpleCoordinate { on_curve: true, x: 494, y: 1493 },
+            SimpleCoordinate { on_curve: true, x: 739, y: 1493 },
+            SimpleCoordinate { on_curve: true, x: 1196, y: 0 },
+            SimpleCoordinate { on_curve: true, x: 987, y: 0 },
+            SimpleCoordinate { on_curve: true, x: 877, y: 389 },
+            SimpleCoordinate { on_curve: true, x: 354, y: 389 },
+            SimpleCoordinate { on_curve: true, x: 246, y: 0 },
+            SimpleCoordinate { on_curve: true, x: 37, y: 0 },
+        ];
+
+        let buf = font_buf();
+        let font = Font::from_buffer(&buf).unwrap();
+
+        let cmap: CMap = font.get_table().unwrap();
+        let format4 = cmap.format4().unwrap();
+        let glyph_id = format4.lookup_glyph_id('A' as u8 as u16).unwrap();
+
+        let loca: Loca = font.get_table().unwrap();
+        let glyph_offset = loca.at(glyph_id as usize);
+
+        let glyf: Glyf = font.get_table().unwrap();
+        let glyph = glyf.at_offset(glyph_offset as usize).unwrap();
+        for (actual, &expected) in glyph.coordinates().zip(expecteds) {
+            assert_eq!(actual, expected);
+        }
     }
 }
