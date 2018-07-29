@@ -89,6 +89,7 @@ impl<'a> Glyph<'a> {
         let mut points_left = 1 + simp.end_points_of_contours.at(last_point_index_offset) as usize;
         while points_left > 0 {
             let flag = flags.at(idx);
+            assert!(!flag.intersects(SimpleFlags::RESERVED));
 
             let repeat_count = if flag.contains(SimpleFlags::REPEAT_FLAG) {
                 idx += 1;
@@ -154,23 +155,23 @@ pub struct SimpleGlyph<'a> {
 bitflags! {
     #[derive(Parse)]
     struct SimpleFlags: u8 {
-        const ON_CURVE_POINT                               = 0b00000001;
-        const X_SHORT_VEC                                  = 0b00000010;
-        const Y_SHORT_VEC                                  = 0b00000100;
-        const REPEAT_FLAG                                  = 0b00001000;
-        const X_IS_SAME                                    = 0b00010000;
-        const POSITIVE_X_SHORT_VECTOR                      = 0b00010000;
-        const Y_IS_SAME                                    = 0b00100000;
-        const POSITIVE_Y_SHORT_VECTOR                      = 0b00100000;
+        const ON_CURVE_POINT                               = 0b00000001; // 0x1
+        const X_SHORT_VEC                                  = 0b00000010; // 0x2
+        const Y_SHORT_VEC                                  = 0b00000100; // 0x4
+        const REPEAT_FLAG                                  = 0b00001000; // 0x8
+        const X_IS_SAME                                    = 0b00010000; // 0x10
+        const POSITIVE_X_SHORT_VECTOR                      = 0b00010000; // 0x10
+        const Y_IS_SAME                                    = 0b00100000; // 0x20
+        const POSITIVE_Y_SHORT_VECTOR                      = 0b00100000; // 0x20
         const RESERVED                                     = 0b11000000;
     }
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct SimpleCoordinate {
-    on_curve: bool,
-    x: isize,
-    y: isize,
+    pub on_curve: bool,
+    pub x: i16,
+    pub y: i16,
 }
 pub struct SimpleCoordinates<'a> {
     flags: DynArr<'a, SimpleFlags>,
@@ -178,8 +179,8 @@ pub struct SimpleCoordinates<'a> {
     delta_ys: &'a [u8],
     repeat_count: u8,
     // coordinate values are relative to the previous point
-    x: isize,
-    y: isize,
+    x: i16,
+    y: i16,
 }
 impl<'a> Iterator for SimpleCoordinates<'a> {
     type Item = SimpleCoordinate;
@@ -193,14 +194,14 @@ impl<'a> Iterator for SimpleCoordinates<'a> {
 
         if self.repeat_count == 0 && flag.contains(SimpleFlags::REPEAT_FLAG) {
             let count_buf = self.flags.split_at(1).1;
-            self.repeat_count = u8::parse(count_buf.0).1;
+            self.repeat_count = u8::parse(count_buf.0).1 + 1;
         }
 
         let on_curve = flag.contains(SimpleFlags::ON_CURVE_POINT);
 
         let dx = if flag.contains(SimpleFlags::X_SHORT_VEC) {
             let (rest, dx) = u8::parse(self.delta_xs);
-            let dx = dx as isize;
+            let dx = dx as i16;
             self.delta_xs = rest;
 
             if flag.contains(SimpleFlags::POSITIVE_X_SHORT_VECTOR) {
@@ -211,12 +212,12 @@ impl<'a> Iterator for SimpleCoordinates<'a> {
         } else if !flag.contains(SimpleFlags::X_IS_SAME) {
             let (rest, dx) = i16::parse(self.delta_xs);
             self.delta_xs = rest;
-            dx as isize
+            dx
         } else { 0 };
 
         let dy = if flag.contains(SimpleFlags::Y_SHORT_VEC) {
             let (rest, dy) = u8::parse(self.delta_ys);
-            let dy = dy as isize;
+            let dy = dy as i16;
             self.delta_ys = rest;
 
             if flag.contains(SimpleFlags::POSITIVE_Y_SHORT_VECTOR) {
@@ -227,7 +228,7 @@ impl<'a> Iterator for SimpleCoordinates<'a> {
         } else if !flag.contains(SimpleFlags::Y_IS_SAME) {
             let (rest, dy) = i16::parse(self.delta_ys);
             self.delta_ys = rest;
-            dy as isize
+            dy
         } else { 0 };
 
         self.x += dx;
@@ -266,17 +267,46 @@ mod tests {
         use tables::glyf::Glyf;
 
         let expecteds = &[
-            SimpleCoordinate { on_curve: true, x: 616, y: 1315 },
-            SimpleCoordinate { on_curve: true, x: 403, y: 551 },
-            SimpleCoordinate { on_curve: true, x: 829, y: 551 },
-            SimpleCoordinate { on_curve: true, x: 494, y: 1493 },
-            SimpleCoordinate { on_curve: true, x: 739, y: 1493 },
-            SimpleCoordinate { on_curve: true, x: 1196, y: 0 },
-            SimpleCoordinate { on_curve: true, x: 987, y: 0 },
-            SimpleCoordinate { on_curve: true, x: 877, y: 389 },
-            SimpleCoordinate { on_curve: true, x: 354, y: 389 },
-            SimpleCoordinate { on_curve: true, x: 246, y: 0 },
-            SimpleCoordinate { on_curve: true, x: 37, y: 0 },
+            SimpleCoordinate { on_curve: true, x: 1012, y: 1442 },
+            SimpleCoordinate { on_curve: true, x: 1012, y: 1237 },
+            SimpleCoordinate { on_curve: false, x: 920, y: 1296 },
+            SimpleCoordinate { on_curve: false, x: 735, y: 1356 },
+            SimpleCoordinate { on_curve: true, x: 641, y: 1356 },
+            SimpleCoordinate { on_curve: false, x: 498, y: 1356 },
+            SimpleCoordinate { on_curve: false, x: 332, y: 1223 },
+            SimpleCoordinate { on_curve: true, x: 332, y: 1110 },
+            SimpleCoordinate { on_curve: false, x: 332, y: 1011 },
+            SimpleCoordinate { on_curve: false, x: 441, y: 907 },
+            SimpleCoordinate { on_curve: true, x: 590, y: 872 },
+            SimpleCoordinate { on_curve: true, x: 696, y: 848 },
+            SimpleCoordinate { on_curve: false, x: 906, y: 799 },
+            SimpleCoordinate { on_curve: false, x: 1098, y: 589 },
+            SimpleCoordinate { on_curve: true, x: 1098, y: 408 },
+            SimpleCoordinate { on_curve: false, x: 1098, y: 195 },
+            SimpleCoordinate { on_curve: false, x: 834, y: -29 },
+            SimpleCoordinate { on_curve: true, x: 582, y: -29 },
+            SimpleCoordinate { on_curve: false, x: 477, y: -29 },
+            SimpleCoordinate { on_curve: false, x: 265, y: 16 },
+            SimpleCoordinate { on_curve: true, x: 158, y: 61 },
+            SimpleCoordinate { on_curve: true, x: 158, y: 276 },
+            SimpleCoordinate { on_curve: false, x: 273, y: 203 },
+            SimpleCoordinate { on_curve: false, x: 478, y: 135 },
+            SimpleCoordinate { on_curve: true, x: 582, y: 135 },
+            SimpleCoordinate { on_curve: false, x: 735, y: 135 },
+            SimpleCoordinate { on_curve: false, x: 905, y: 272 },
+            SimpleCoordinate { on_curve: true, x: 905, y: 395 },
+            SimpleCoordinate { on_curve: false, x: 905, y: 507 },
+            SimpleCoordinate { on_curve: false, x: 788, y: 625 },
+            SimpleCoordinate { on_curve: true, x: 643, y: 657 },
+            SimpleCoordinate { on_curve: true, x: 535, y: 682 },
+            SimpleCoordinate { on_curve: false, x: 327, y: 729 },
+            SimpleCoordinate { on_curve: false, x: 139, y: 919 },
+            SimpleCoordinate { on_curve: true, x: 139, y: 1079 },
+            SimpleCoordinate { on_curve: false, x: 139, y: 1279 },
+            SimpleCoordinate { on_curve: false, x: 408, y: 1520 },
+            SimpleCoordinate { on_curve: true, x: 631, y: 1520 },
+            SimpleCoordinate { on_curve: false, x: 717, y: 1520 },
+            SimpleCoordinate { on_curve: false, x: 907, y: 1481 },
         ];
 
         let buf = font_buf();
@@ -284,14 +314,14 @@ mod tests {
 
         let cmap: CMap = font.get_table().unwrap();
         let format4 = cmap.format4().unwrap();
-        let glyph_id = format4.lookup_glyph_id('A' as u8 as u16).unwrap();
+        let glyph_id = format4.lookup_glyph_id('S' as u8 as u16).unwrap();
 
         let loca: Loca = font.get_table().unwrap();
         let glyph_offset = loca.at(glyph_id as usize);
 
         let glyf: Glyf = font.get_table().unwrap();
         let glyph = glyf.at_offset(glyph_offset as usize).unwrap();
-        for (actual, &expected) in glyph.coordinates().zip(expecteds) {
+        for (actual, &expected) in glyph.coordinates().zip(expecteds.iter()) {
             assert_eq!(actual, expected);
         }
     }

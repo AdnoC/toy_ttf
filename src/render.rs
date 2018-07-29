@@ -57,7 +57,15 @@ impl Raster {
     }
 
     pub fn draw_horizontal_line(&mut self, start: Point, end: Point) {
-        unimplemented!()
+        let (start, end) = if start.x < end.x {
+            (start, end)
+        } else {
+            (end, start)
+        };
+        let y = start.y as u32;
+        for x in (start.x as u32)..(end.x as u32) {
+            self.put_pixel(x, y, 0);
+        }
     }
 }
 
