@@ -64,6 +64,13 @@ impl<'a, T: Parse<'a>> DynArr<'a, T> {
     pub fn len(&self) -> usize {
         self.0.len() / T::approx_file_size()
     }
+    pub fn split_at(&self, idx: usize) -> (DynArr<'a, T>, DynArr<'a, T>) {
+        use std::marker::PhantomData;
+        assert!(idx % T::approx_file_size() == 0);
+        let sized_idx = idx * T::approx_file_size();
+        let (before, after) = self.0.split_at(sized_idx);
+        (DynArr(before, PhantomData), DynArr(after, PhantomData))
+    }
 }
 impl<'a, T: Parse<'a>> Parse<'a> for DynArr<'a, T> {
     fn approx_file_size() -> usize {
