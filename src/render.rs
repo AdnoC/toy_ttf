@@ -1,4 +1,5 @@
 use image::GrayImage;
+use math::Point;
 
 pub struct Raster(pub GrayImage);
 
@@ -69,10 +70,4 @@ impl Raster {
             self.put_pixel(x, y, 0);
         }
     }
-}
-
-#[derive(Debug, PartialEq, PartialOrd)]
-pub struct Point {
-    pub x: f32,
-    pub y: f32
 }

@@ -307,7 +307,7 @@ pub struct CompositeGlyph<'a>{
 }
 
 #[derive(Parse)]
-struct CompositeComponent {
+struct CompositeComponentHeader {
     flags: CompositeFlags,
     glyph_index: u16,
     // arg1
@@ -318,11 +318,38 @@ pub struct CompositeCoordinates<'a> {
     glyf: Glyf<'a>,
     components: &'a [u8],
     component_idx: usize,
-    current: Option<SimpleCoordinates<'a>>,
+    current_glyph: Option<SimpleCoordinates<'a>>,
+}
+impl<'a> CompositeCoordinates<'a> {
+    fn args(&self, flags: CompositeFlags, args_buf: &'a [u8]) -> (&'a [u8], i32, i32) {
+        if flags.contains(CompositeFlags::ARGS_ARE_XY_VALUES) {
+            if flags.contains(CompositeFlags::ARG_1_AND_2_ARE_WORDS) {
+                Self::parse_args::<i16>(args_buf)
+            } else {
+                Self::parse_args::<i8>(args_buf)
+            }
+        } else {
+            // Point values
+            unimplemented!()
+            // if flags.contains(CompositeFlags::ARG_1_AND_2_ARE_WORDS) {
+            //     Self::parse_args::<u16>(args_buf)
+            // } else {
+            //     Self::parse_args::<u8>(args_buf)
+            // }
+        }
+    }
+
+    fn parse_args<T: Parse<'a> + Into<i32>>(args_buf: &'a [u8]) -> (&'a [u8], i32, i32) {
+        let (args_buf, arg1) = T::parse(args_buf);
+        let (args_buf, arg2) = T::parse(args_buf);
+        (args_buf, arg1.into(), arg2.into())
+    }
 }
 impl<'a> Iterator for CompositeCoordinates<'a> {
     type Item = Coordinate;
     fn next(&mut self) -> Option<Self::Item> {
+        let (args, component_header) = CompositeComponentHeader::parse(self.components);
+        let (next, arg1, arg2) = self.args(component_header.flags, args);
         None // TODO
     }
 }

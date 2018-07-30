@@ -1,5 +1,6 @@
 extern crate toy_ttf;
 use toy_ttf::tables::glyf::Glyph;
+use toy_ttf::math::Point;
 
 #[allow(dead_code)]
 const SERIF: &'static str = "fonts/DejaVuSerif.ttf";

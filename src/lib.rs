@@ -67,6 +67,7 @@ mod parse;
 pub mod font;
 pub mod tables;
 pub mod render;
+pub mod math;
 
 #[cfg(test)]
 pub(crate) mod test_utils {
