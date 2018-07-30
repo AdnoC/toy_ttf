@@ -71,14 +71,8 @@ impl<'a> GetTable<Loca<'a>> for Font<'a> {
         let maxp: MaxP = self.get_table()?;
         let num_glyphs = maxp.num_glyphs as usize;
 
-        let loca_slice = self.get_table_slice::<Loca>()?;
+        let loca_buf = self.get_table_slice::<Loca>()?;
 
-        let size = (num_glyphs + 1) * match format {
-            IndexToLocFormat::Short => <u16 as Parse>::approx_file_size(),
-            IndexToLocFormat::Long => <u32 as Parse>::approx_file_size(),
-        };
-
-        let loca_buf = &loca_slice[..size];
         let loca = match format {
             IndexToLocFormat::Short => Loca::Short(S(DynArr(loca_buf, PhantomData))),
             IndexToLocFormat::Long => Loca::Long(L(DynArr(loca_buf, PhantomData))),
