@@ -1,6 +1,7 @@
 extern crate toy_ttf;
 use toy_ttf::tables::glyf::Glyph;
 use toy_ttf::math::{Point, Affine};
+use toy_ttf::render::Raster;
 
 #[allow(dead_code)]
 const SERIF: &'static str = "fonts/DejaVuSerif.ttf";
@@ -29,18 +30,8 @@ fn main() {
 
 }
 
-fn draw_glyph<'a>(glyph: Glyph<'a>) {
-    use toy_ttf::render::*;
+fn render_glyph<'a>(raster: &mut Raster, affine: Affine, glyph: Glyph<'a>) {
     use toy_ttf::tables::glyf::{Coordinate, Description};
-
-    const PADDING: u32 = 50;
-    let width = glyph.header.x_max - glyph.header.x_min;
-    let height = glyph.header.y_max - glyph.header.y_min;
-    let x_shift = (PADDING as i16 / 2) - glyph.header.x_min;
-    let y_shift = (PADDING as i16 / 2) - glyph.header.y_min;
-    let affine = Affine::translation(x_shift, y_shift);
-
-    let mut raster = Raster::new(width as u32 + PADDING, height as u32 + PADDING);
 
     let glyph = match glyph.desc {
         Description::Simple(simp) => simp,
@@ -50,12 +41,10 @@ fn draw_glyph<'a>(glyph: Glyph<'a>) {
     let mut last_coord = first_coord;
     for (c1, c2) in glyph.coordinates().zip(glyph.coordinates().skip(1)) {
         last_coord = c2;
-        draw_coords(&mut raster, c1, c2, affine);
+        draw_coords(raster, c1, c2, affine);
     }
-    draw_coords(&mut raster, first_coord, last_coord, affine);
+    draw_coords(raster, first_coord, last_coord, affine);
 
-    const img_file: &str = "RASTER_RESULT.bmp";
-    raster.0.save(img_file).unwrap();
 
     fn draw_coords(r: &mut Raster, c1: Coordinate, c2: Coordinate, af: Affine) {
         let p1 = Point {
@@ -69,6 +58,23 @@ fn draw_glyph<'a>(glyph: Glyph<'a>) {
 
         r.draw_line(af * p1, af * p2);
     }
+
+}
+fn draw_glyph<'a>(glyph: Glyph<'a>) {
+
+    const PADDING: u32 = 50;
+    let width = glyph.header.x_max - glyph.header.x_min;
+    let height = glyph.header.y_max - glyph.header.y_min;
+    let x_shift = (PADDING as i16 / 2) - glyph.header.x_min;
+    let y_shift = (PADDING as i16 / 2) - glyph.header.y_min;
+    let affine = Affine::translation(x_shift, y_shift);
+
+    let mut raster = Raster::new(width as u32 + PADDING, height as u32 + PADDING);
+
+    render_glyph(&mut raster, affine, glyph);
+
+    const img_file: &str = "RASTER_RESULT.bmp";
+    raster.0.save(img_file).unwrap();
 }
 
 fn load_file(name: &str) -> Vec<u8> {
