@@ -30,6 +30,27 @@ pub struct Affine {
     pub translation: [f32; 2],
 }
 
+impl Affine {
+    pub fn translation<T: Into<f32>>(tx: T, ty: T) -> Affine {
+        Affine {
+            square: [[1., 0.], [0., 1.]],
+            translation: [tx.into(), ty.into()],
+        }
+    }
+    pub fn scale<T: Into<f32>>(sx: T, sy: T) -> Affine {
+        Affine {
+            square: [[sx.into(), 0.], [0., sy.into()]],
+            translation: [0., 0.],
+        }
+    }
+    pub fn shear<T: Into<f32>>(shx: T, shy: T) -> Affine {
+        Affine {
+            square: [[1., shx.into()], [shy.into(), 1.]],
+            translation: [0., 0.],
+        }
+    }
+}
+
 impl<T: Into<Point>> Mul<T> for Affine {
     type Output = Point;
     fn mul(self, rhs: T) -> Self::Output {

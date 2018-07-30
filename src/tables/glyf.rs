@@ -1,5 +1,6 @@
 use parse::{Parse, BufView, DynArr};
 use tables::{PrimaryTable, TableTag};
+use math::Affine;
 
 // Total # of glyphs is `num_glyphs` in MaxP table
 // Loca table provides index of glyph by glyph_id
@@ -71,35 +72,10 @@ pub struct Glyph<'a> {
     pub header: Header,
     pub desc: Description<'a>,
 }
-impl<'a> Glyph<'a> {
-    // TODO: Name for compoind glyph
-    pub fn coordinates(&self) -> Coordinates<'a> {
-        match self.desc {
-            Description::Simple(ref simp) => Coordinates::Simple(simp.coordinates()),
-            Description::Composite(ref comp) => Coordinates::Composite(comp.coordinates()),
-        }
-    }
-
-
-}
 
 pub enum Description<'a> {
     Simple(SimpleGlyph<'a>),
     Composite(CompositeGlyph<'a>),
-}
-
-pub enum Coordinates<'a> {
-    Simple(SimpleCoordinates<'a>),
-    Composite(CompositeCoordinates<'a>),
-}
-impl<'a> Iterator for Coordinates<'a> {
-    type Item = Coordinate;
-    fn next(&mut self) -> Option<Self::Item> {
-        match self {
-            Coordinates::Simple(simp) => simp.next(),
-            Coordinates::Composite(comp) => comp.next(),
-        }
-    }
 }
 
 pub struct SimpleGlyph<'a> {
@@ -113,7 +89,7 @@ pub struct SimpleGlyph<'a> {
     // y_coords: BufView<'a, u8>,
 }
 impl<'a> SimpleGlyph<'a> {
-    fn coordinates(&self) -> SimpleCoordinates<'a> {
+    pub fn coordinates(&self) -> SimpleCoordinates<'a> {
         use std::marker::PhantomData;
         let flags = self.coords.cast::<SimpleFlags>();
         let mut idx = 0;
@@ -300,8 +276,7 @@ pub struct CompositeGlyph<'a> {
 }
 
 impl<'a> CompositeGlyph<'a> {
-
-    fn coordinates(&self) -> CompositeCoordinates<'a> {
+    pub fn coordinates(&self) -> CompositeCoordinates<'a> {
         use std::marker::PhantomData;
 
         unimplemented!()
@@ -317,10 +292,9 @@ struct CompositeComponentHeader {
 }
 
 pub struct CompositeCoordinates<'a> {
-    glyf: Glyf<'a>,
     components: &'a [u8],
-    component_idx: usize,
-    current_glyph: Option<SimpleCoordinates<'a>>,
+    has_more: bool,
+
 }
 impl<'a> CompositeCoordinates<'a> {
     fn affine_square(&self, flags: CompositeFlags, buf: &'a [u8]) -> (&'a [u8], [[f32; 2]; 2]) {
@@ -369,11 +343,9 @@ impl<'a> CompositeCoordinates<'a> {
     }
 }
 impl<'a> Iterator for CompositeCoordinates<'a> {
-    type Item = Coordinate;
+    type Item = (usize, Affine);
     fn next(&mut self) -> Option<Self::Item> {
-        use math::Affine;
-
-        if self.current_glyph.is_none() {
+        if !self.has_more {
             return None;
         }
 
@@ -387,9 +359,8 @@ impl<'a> Iterator for CompositeCoordinates<'a> {
             translation: [x as f32, y as f32],
         };
 
-
-
-        None // TODO
+        self.has_more = component_header.flags.contains(CompositeFlags::MORE_COMPONENTS);
+        Some((component_header.glyph_index as usize, affine))
     }
 }
 
