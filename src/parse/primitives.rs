@@ -7,7 +7,7 @@ pub type UFWord = u16;
 pub type LongDateTime = i64;
 
 #[derive(Debug, PartialEq, PartialOrd)]
-pub struct F2Dot14(f32);
+pub struct F2Dot14(pub f32);
 impl<'a> Parse<'a> for F2Dot14 {
     fn approx_file_size() -> usize {
         i16::approx_file_size()

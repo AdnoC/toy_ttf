@@ -321,6 +321,27 @@ pub struct CompositeCoordinates<'a> {
     current_glyph: Option<SimpleCoordinates<'a>>,
 }
 impl<'a> CompositeCoordinates<'a> {
+    fn affine_square(&self, flags: CompositeFlags, buf: &'a [u8]) -> (&'a [u8], [[f32; 2]; 2]) {
+        use parse::primitives::F2Dot14;
+
+        if flags.contains(CompositeFlags::WE_HAVE_A_SCALE) {
+            let (buf, scale) = F2Dot14::parse(buf);
+            (buf, [[scale.0, 0.], [0., scale.0]])
+        } else if flags.contains(CompositeFlags::WE_HAVE_AN_X_AND_Y_SCALE) {
+            let (buf, x_scale) = F2Dot14::parse(buf);
+            let (buf, y_scale) = F2Dot14::parse(buf);
+            (buf, [[x_scale.0, 0.], [0., y_scale.0]])
+        } else if flags.contains(CompositeFlags::WE_HAVE_A_TWO_BY_TWO) {
+            let (buf, x_scale) = F2Dot14::parse(buf);
+            let (buf, s01) = F2Dot14::parse(buf);
+            let (buf, s10) = F2Dot14::parse(buf);
+            let (buf, y_scale) = F2Dot14::parse(buf);
+            (buf, [[x_scale.0, s01.0], [s10.0, y_scale.0]])
+        } else {
+            (buf, [[1., 0.], [0., 1.]])
+        }
+    }
+
     fn args(&self, flags: CompositeFlags, args_buf: &'a [u8]) -> (&'a [u8], i32, i32) {
         if flags.contains(CompositeFlags::ARGS_ARE_XY_VALUES) {
             if flags.contains(CompositeFlags::ARG_1_AND_2_ARE_WORDS) {
@@ -348,8 +369,17 @@ impl<'a> CompositeCoordinates<'a> {
 impl<'a> Iterator for CompositeCoordinates<'a> {
     type Item = Coordinate;
     fn next(&mut self) -> Option<Self::Item> {
+        use math::Affine;
         let (args, component_header) = CompositeComponentHeader::parse(self.components);
-        let (next, arg1, arg2) = self.args(component_header.flags, args);
+        // x, y since point values aren't implemented
+        let (buf, x, y) = self.args(component_header.flags, args);
+
+        let (buf, affine_square) = self.affine_square(component_header.flags, buf);
+        let affine = Affine {
+            square: affine_square,
+            translation: [x as f32, y as f32],
+        };
+
         None // TODO
     }
 }

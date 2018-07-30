@@ -1,9 +1,19 @@
 use std::ops::Mul;
+use std::convert::From;
 
 #[derive(Debug, PartialEq, PartialOrd)]
 pub struct Point {
     pub x: f32,
     pub y: f32
+}
+
+impl<T: Into<f32>> From<(T, T)> for Point {
+    fn from(p: (T, T)) -> Point {
+        Point {
+            x: p.0.into(),
+            y: p.1.into(),
+        }
+    }
 }
 
 /// Represents the following matrix:
