@@ -14,6 +14,7 @@ pub trait Parse<'a> {
 /// Should be considered as just a view of the file starting at some point.
 /// Does not have a defined endpoint, could go until the end of the file
 /// Typed just so that the `at` function is convenient
+#[derive(Clone)]
 pub(crate) struct BufView<'a, T>(pub &'a [u8], pub ::std::marker::PhantomData<T>);
 impl<'a, T: Parse<'a>> Parse<'a> for BufView<'a, T> {
     fn approx_file_size() -> usize {

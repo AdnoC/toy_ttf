@@ -4,7 +4,7 @@ use tables::{PrimaryTable, TableTag};
 // Total # of glyphs is `num_glyphs` in MaxP table
 // Loca table provides index of glyph by glyph_id
 
-#[derive(Debug, Parse)]
+#[derive(Debug, Parse, Clone)]
 pub struct Glyf<'a>(BufView<'a, u8>);
 
 impl<'a> PrimaryTable for Glyf<'a> {
@@ -44,9 +44,12 @@ impl<'a> Glyf<'a> {
                 instructions,
                 coords,
             })
-        } else {
-            unimplemented!()
-            // Description::Composite // TODO
+        } else { // Recommended that number_of_contours == -1
+            Description::Composite(CompositeGlyph{
+                start: BufView(contents, PhantomData),
+                glyf: self.clone(),
+
+            })
         };
 
         Some(Glyph {
@@ -134,11 +137,21 @@ impl<'a> Glyph<'a> {
             y: 0,
         }
     }
+
+    pub fn composite_coordinates(&self) -> SimpleCoordinates<'a> {
+        use std::marker::PhantomData;
+
+        let comp = match self.desc {
+            Description::Composite(ref comp) => comp,
+            _ => unimplemented!()
+        };
+        unimplemented!()
+    }
 }
 
 pub enum Description<'a> {
     Simple(SimpleGlyph<'a>),
-    Composite, // TODO
+    Composite(CompositeGlyph<'a>),
 }
 
 pub struct SimpleGlyph<'a> {
@@ -253,6 +266,40 @@ impl<'a> Iterator for SimpleCoordinates<'a> {
         })
     }
 }
+
+bitflags! {
+    #[derive(Parse)]
+    struct CompositeFlags: u16 {
+        const ARG_1_AND_2_ARE_WORDS = 0x0001;
+        const ARGS_ARE_XY_VALUES = 0x0002;
+        const ROUND_XY_TO_GRID = 0x0004;
+        const WE_HAVE_A_SCALE = 0x0008;
+        const MORE_COMPONENTS = 0x0020;
+        const WE_HAVE_AN_X_AND_Y_SCALE = 0x0040;
+        const WE_HAVE_A_TWO_BY_TWO = 0x0080;
+        const WE_HAVE_INSTRUCTIONS = 0x0100;
+        const USE_MY_METRICS = 0x0200;
+        const OVERLAP_COMPOUND = 0x0400;
+        const SCALED_COMPONENT_OFFSET = 0x0800;
+        const UNSCALED_COMPONENT_OFFSET = 0x1000;
+        const Reserved = 0xE010;
+    }
+}
+
+#[derive(Parse)]
+pub struct CompositeGlyph<'a>{
+    start: BufView<'a, CompositeComponent>,
+    glyf: Glyf<'a>,
+}
+
+#[derive(Parse)]
+struct CompositeComponent {
+    flags: CompositeFlags,
+    glyph_index: u16,
+    // arg1
+    // arg2
+}
+
 
 #[cfg(test)]
 mod tests {
