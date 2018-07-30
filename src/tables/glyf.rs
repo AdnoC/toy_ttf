@@ -73,14 +73,14 @@ pub struct Glyph<'a> {
 }
 impl<'a> Glyph<'a> {
     // TODO: Name for compoind glyph
-    pub fn coordinates(&self) -> SimpleCoordinates<'a> {
+    pub fn coordinates(&self) -> Coordinates<'a> {
+        match self.desc {
+            Description::Simple(ref simp) => Coordinates::Simple(self.simple_coordinates(simp)),
+            Description::Composite(ref comp) => Coordinates::Composite(self.composite_coordinates(comp)),
+        }
+    }
+    fn simple_coordinates(&self, simp: &SimpleGlyph<'a>) -> SimpleCoordinates<'a> {
         use std::marker::PhantomData;
-
-        let simp = match self.desc {
-            Description::Simple(ref simp) => simp,
-            _ => unimplemented!()
-        };
-
         let flags = simp.coords.cast::<SimpleFlags>();
         let mut idx = 0;
         let mut xs_len = 0;
@@ -138,7 +138,7 @@ impl<'a> Glyph<'a> {
         }
     }
 
-    pub fn composite_coordinates(&self) -> SimpleCoordinates<'a> {
+    fn composite_coordinates(&self, comp: &CompositeGlyph<'a>) -> CompositeCoordinates {
         use std::marker::PhantomData;
 
         let comp = match self.desc {
@@ -152,6 +152,20 @@ impl<'a> Glyph<'a> {
 pub enum Description<'a> {
     Simple(SimpleGlyph<'a>),
     Composite(CompositeGlyph<'a>),
+}
+
+pub enum Coordinates<'a> {
+    Simple(SimpleCoordinates<'a>),
+    Composite(CompositeCoordinates),
+}
+impl<'a> Iterator for Coordinates<'a> {
+    type Item = Coordinate;
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            Coordinates::Simple(simp) => simp.next(),
+            Coordinates::Composite(comp) => comp.next(),
+        }
+    }
 }
 
 pub struct SimpleGlyph<'a> {
@@ -181,7 +195,7 @@ bitflags! {
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
-pub struct SimpleCoordinate {
+pub struct Coordinate {
     pub on_curve: bool,
     pub x: i16,
     pub y: i16,
@@ -196,7 +210,7 @@ pub struct SimpleCoordinates<'a> {
     y: i16,
 }
 impl<'a> Iterator for SimpleCoordinates<'a> {
-    type Item = SimpleCoordinate;
+    type Item = Coordinate;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.flags.len() == 0 {
@@ -259,7 +273,7 @@ impl<'a> Iterator for SimpleCoordinates<'a> {
             self.flags = self.flags.split_at(1).1;
         }
 
-        Some(SimpleCoordinate {
+        Some(Coordinate {
             on_curve,
             x: self.x,
             y: self.y,
@@ -300,6 +314,14 @@ struct CompositeComponent {
     // arg2
 }
 
+pub struct CompositeCoordinates;
+impl Iterator for CompositeCoordinates {
+    type Item = Coordinate;
+    fn next(&mut self) -> Option<Self::Item> {
+        None // TODO
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -314,46 +336,46 @@ mod tests {
         use tables::glyf::Glyf;
 
         let expecteds = &[
-            SimpleCoordinate { on_curve: true, x: 1012, y: 1442 },
-            SimpleCoordinate { on_curve: true, x: 1012, y: 1237 },
-            SimpleCoordinate { on_curve: false, x: 920, y: 1296 },
-            SimpleCoordinate { on_curve: false, x: 735, y: 1356 },
-            SimpleCoordinate { on_curve: true, x: 641, y: 1356 },
-            SimpleCoordinate { on_curve: false, x: 498, y: 1356 },
-            SimpleCoordinate { on_curve: false, x: 332, y: 1223 },
-            SimpleCoordinate { on_curve: true, x: 332, y: 1110 },
-            SimpleCoordinate { on_curve: false, x: 332, y: 1011 },
-            SimpleCoordinate { on_curve: false, x: 441, y: 907 },
-            SimpleCoordinate { on_curve: true, x: 590, y: 872 },
-            SimpleCoordinate { on_curve: true, x: 696, y: 848 },
-            SimpleCoordinate { on_curve: false, x: 906, y: 799 },
-            SimpleCoordinate { on_curve: false, x: 1098, y: 589 },
-            SimpleCoordinate { on_curve: true, x: 1098, y: 408 },
-            SimpleCoordinate { on_curve: false, x: 1098, y: 195 },
-            SimpleCoordinate { on_curve: false, x: 834, y: -29 },
-            SimpleCoordinate { on_curve: true, x: 582, y: -29 },
-            SimpleCoordinate { on_curve: false, x: 477, y: -29 },
-            SimpleCoordinate { on_curve: false, x: 265, y: 16 },
-            SimpleCoordinate { on_curve: true, x: 158, y: 61 },
-            SimpleCoordinate { on_curve: true, x: 158, y: 276 },
-            SimpleCoordinate { on_curve: false, x: 273, y: 203 },
-            SimpleCoordinate { on_curve: false, x: 478, y: 135 },
-            SimpleCoordinate { on_curve: true, x: 582, y: 135 },
-            SimpleCoordinate { on_curve: false, x: 735, y: 135 },
-            SimpleCoordinate { on_curve: false, x: 905, y: 272 },
-            SimpleCoordinate { on_curve: true, x: 905, y: 395 },
-            SimpleCoordinate { on_curve: false, x: 905, y: 507 },
-            SimpleCoordinate { on_curve: false, x: 788, y: 625 },
-            SimpleCoordinate { on_curve: true, x: 643, y: 657 },
-            SimpleCoordinate { on_curve: true, x: 535, y: 682 },
-            SimpleCoordinate { on_curve: false, x: 327, y: 729 },
-            SimpleCoordinate { on_curve: false, x: 139, y: 919 },
-            SimpleCoordinate { on_curve: true, x: 139, y: 1079 },
-            SimpleCoordinate { on_curve: false, x: 139, y: 1279 },
-            SimpleCoordinate { on_curve: false, x: 408, y: 1520 },
-            SimpleCoordinate { on_curve: true, x: 631, y: 1520 },
-            SimpleCoordinate { on_curve: false, x: 717, y: 1520 },
-            SimpleCoordinate { on_curve: false, x: 907, y: 1481 },
+            Coordinate { on_curve: true, x: 1012, y: 1442 },
+            Coordinate { on_curve: true, x: 1012, y: 1237 },
+            Coordinate { on_curve: false, x: 920, y: 1296 },
+            Coordinate { on_curve: false, x: 735, y: 1356 },
+            Coordinate { on_curve: true, x: 641, y: 1356 },
+            Coordinate { on_curve: false, x: 498, y: 1356 },
+            Coordinate { on_curve: false, x: 332, y: 1223 },
+            Coordinate { on_curve: true, x: 332, y: 1110 },
+            Coordinate { on_curve: false, x: 332, y: 1011 },
+            Coordinate { on_curve: false, x: 441, y: 907 },
+            Coordinate { on_curve: true, x: 590, y: 872 },
+            Coordinate { on_curve: true, x: 696, y: 848 },
+            Coordinate { on_curve: false, x: 906, y: 799 },
+            Coordinate { on_curve: false, x: 1098, y: 589 },
+            Coordinate { on_curve: true, x: 1098, y: 408 },
+            Coordinate { on_curve: false, x: 1098, y: 195 },
+            Coordinate { on_curve: false, x: 834, y: -29 },
+            Coordinate { on_curve: true, x: 582, y: -29 },
+            Coordinate { on_curve: false, x: 477, y: -29 },
+            Coordinate { on_curve: false, x: 265, y: 16 },
+            Coordinate { on_curve: true, x: 158, y: 61 },
+            Coordinate { on_curve: true, x: 158, y: 276 },
+            Coordinate { on_curve: false, x: 273, y: 203 },
+            Coordinate { on_curve: false, x: 478, y: 135 },
+            Coordinate { on_curve: true, x: 582, y: 135 },
+            Coordinate { on_curve: false, x: 735, y: 135 },
+            Coordinate { on_curve: false, x: 905, y: 272 },
+            Coordinate { on_curve: true, x: 905, y: 395 },
+            Coordinate { on_curve: false, x: 905, y: 507 },
+            Coordinate { on_curve: false, x: 788, y: 625 },
+            Coordinate { on_curve: true, x: 643, y: 657 },
+            Coordinate { on_curve: true, x: 535, y: 682 },
+            Coordinate { on_curve: false, x: 327, y: 729 },
+            Coordinate { on_curve: false, x: 139, y: 919 },
+            Coordinate { on_curve: true, x: 139, y: 1079 },
+            Coordinate { on_curve: false, x: 139, y: 1279 },
+            Coordinate { on_curve: false, x: 408, y: 1520 },
+            Coordinate { on_curve: true, x: 631, y: 1520 },
+            Coordinate { on_curve: false, x: 717, y: 1520 },
+            Coordinate { on_curve: false, x: 907, y: 1481 },
         ];
 
         let buf = font_buf();
