@@ -31,14 +31,14 @@ impl<'a> Font<'a> {
     pub fn get_glyph(&self, code_point: char) -> Option<Glyph<'a>> {
         use tables::cmap::CMap;
         use tables::glyf::Glyf;
-        use std::u8;
-        assert!(code_point < u8::MAX as char); // Only ascii for now
+        use std::u16;
+        assert!((code_point as u32) < (u16::MAX as u32)); // Only ascii for now
         let loca: Loca = self.get_table()?;
         let cmap: CMap = self.get_table()?;
         let format4 = cmap.format4()?;
         let glyf: Glyf = self.get_table()?;
 
-        let glyph_id = format4.lookup_glyph_id(code_point as u8 as u16)?;
+        let glyph_id = format4.lookup_glyph_id(code_point as u32 as u16)?;
         let glyph_offset = loca.at(glyph_id as usize);
         glyf.at_offset(glyph_offset as usize)
     }
