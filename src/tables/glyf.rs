@@ -370,6 +370,11 @@ impl<'a> Iterator for CompositeCoordinates<'a> {
     type Item = Coordinate;
     fn next(&mut self) -> Option<Self::Item> {
         use math::Affine;
+
+        if self.current_glyph.is_none() {
+            return None;
+        }
+
         let (args, component_header) = CompositeComponentHeader::parse(self.components);
         // x, y since point values aren't implemented
         let (buf, x, y) = self.args(component_header.flags, args);
@@ -379,6 +384,8 @@ impl<'a> Iterator for CompositeCoordinates<'a> {
             square: affine_square,
             translation: [x as f32, y as f32],
         };
+
+
 
         None // TODO
     }
