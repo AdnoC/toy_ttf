@@ -20,10 +20,12 @@ impl<'a> Font<'a> {
     }
 
 
-    fn get_table_start<T: PrimaryTable>(&self) -> Option<&'a [u8]> {
+    fn get_table_slice<T: PrimaryTable>(&self) -> Option<&'a [u8]> {
         self.font_dir
             .table_record::<T>()
-            .map(|record| &self.buf[(record.offset as usize)..])
+            .map(|record|
+                 &self.buf[(record.offset as usize)..(record.offset as usize +
+                                                      record.length as usize)])
     }
 
     pub fn get_glyph(&self, code_point: char) -> Option<Glyph<'a>> {
@@ -49,9 +51,9 @@ pub trait GetTable<T> {
 
 impl<'a, T: Parse<'a> + PrimaryTable> GetTable<T> for Font<'a> {
     fn get_table(&self) -> Option<T> {
-        let table_start = self.get_table_start::<T>()?;
+        let table_slice = self.get_table_slice::<T>()?;
 
-        let table = T::parse(table_start).1;
+        let table = T::parse(table_slice).1;
         Some(table)
     }
 }
@@ -69,14 +71,14 @@ impl<'a> GetTable<Loca<'a>> for Font<'a> {
         let maxp: MaxP = self.get_table()?;
         let num_glyphs = maxp.num_glyphs as usize;
 
-        let loca_start = self.get_table_start::<Loca>()?;
+        let loca_slice = self.get_table_slice::<Loca>()?;
 
         let size = (num_glyphs + 1) * match format {
             IndexToLocFormat::Short => <u16 as Parse>::approx_file_size(),
             IndexToLocFormat::Long => <u32 as Parse>::approx_file_size(),
         };
 
-        let loca_buf = &loca_start[..size];
+        let loca_buf = &loca_slice[..size];
         let loca = match format {
             IndexToLocFormat::Short => Loca::Short(S(DynArr(loca_buf, PhantomData))),
             IndexToLocFormat::Long => Loca::Long(L(DynArr(loca_buf, PhantomData))),
