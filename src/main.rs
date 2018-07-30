@@ -2,6 +2,7 @@ extern crate toy_ttf;
 use toy_ttf::tables::glyf::Glyph;
 use toy_ttf::math::{Point, Affine};
 use toy_ttf::render::Raster;
+use toy_ttf::font::*;
 
 #[allow(dead_code)]
 const SERIF: &'static str = "fonts/DejaVuSerif.ttf";
@@ -26,41 +27,49 @@ fn main() {
     let font = Font::from_buffer(&font_buf).unwrap();
     let glyph = font.get_glyph('S').unwrap(); // Codepoint is 188
     // let glyph = font.get_glyph('¼').unwrap(); // Codepoint is 188
-    draw_glyph(glyph);
+    draw_glyph(&font, glyph);
 
 }
 
-fn render_glyph<'a>(raster: &mut Raster, affine: Affine, glyph: Glyph<'a>) {
+fn render_glyph<'a>(font: &Font<'a>, raster: &mut Raster, affine: Affine, glyph: Glyph<'a>) {
     use toy_ttf::tables::glyf::{Coordinate, Description};
 
-    let glyph = match glyph.desc {
-        Description::Simple(simp) => simp,
-        Description::Composite(_) => unimplemented!(),
+    match glyph.desc {
+        Description::Simple(glyph) => {
+            let first_coord = glyph.coordinates().next().unwrap();
+            let mut last_coord = first_coord;
+            for (c1, c2) in glyph.coordinates().zip(glyph.coordinates().skip(1)) {
+                last_coord = c2;
+                draw_coords(raster, c1, c2, affine);
+            }
+            draw_coords(raster, first_coord, last_coord, affine);
+
+
+            fn draw_coords(r: &mut Raster, c1: Coordinate, c2: Coordinate, af: Affine) {
+                let p1 = Point {
+                    x: c1.x as f32,
+                    y: c1.y as f32,
+                };
+                let p2 = Point {
+                    x: c2.x as f32,
+                    y: c2.y as f32,
+                };
+
+                r.draw_line(af * p1, af * p2);
+            }
+        },
+        Description::Composite(glyph) => {
+            use toy_ttf::tables::glyf::Glyf;
+            for (sub_idx, sub_affine) in glyph.coordinates() {
+                let glyf: Glyf = font.get_table().unwrap();
+                let sub_glyph = glyf.at_offset(sub_idx).unwrap();
+
+                render_glyph(font, raster, affine * sub_affine, sub_glyph);
+            }
+        },
     };
-    let first_coord = glyph.coordinates().next().unwrap();
-    let mut last_coord = first_coord;
-    for (c1, c2) in glyph.coordinates().zip(glyph.coordinates().skip(1)) {
-        last_coord = c2;
-        draw_coords(raster, c1, c2, affine);
-    }
-    draw_coords(raster, first_coord, last_coord, affine);
-
-
-    fn draw_coords(r: &mut Raster, c1: Coordinate, c2: Coordinate, af: Affine) {
-        let p1 = Point {
-            x: c1.x as f32,
-            y: c1.y as f32,
-        };
-        let p2 = Point {
-            x: c2.x as f32,
-            y: c2.y as f32,
-        };
-
-        r.draw_line(af * p1, af * p2);
-    }
-
 }
-fn draw_glyph<'a>(glyph: Glyph<'a>) {
+fn draw_glyph<'a>(font: &Font<'a>, glyph: Glyph<'a>) {
 
     const PADDING: u32 = 50;
     let width = glyph.header.x_max - glyph.header.x_min;
@@ -71,7 +80,7 @@ fn draw_glyph<'a>(glyph: Glyph<'a>) {
 
     let mut raster = Raster::new(width as u32 + PADDING, height as u32 + PADDING);
 
-    render_glyph(&mut raster, affine, glyph);
+    render_glyph(font, &mut raster, affine, glyph);
 
     const img_file: &str = "RASTER_RESULT.bmp";
     raster.0.save(img_file).unwrap();
