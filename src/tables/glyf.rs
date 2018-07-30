@@ -75,22 +75,55 @@ impl<'a> Glyph<'a> {
     // TODO: Name for compoind glyph
     pub fn coordinates(&self) -> Coordinates<'a> {
         match self.desc {
-            Description::Simple(ref simp) => Coordinates::Simple(self.simple_coordinates(simp)),
-            Description::Composite(ref comp) => Coordinates::Composite(self.composite_coordinates(comp)),
+            Description::Simple(ref simp) => Coordinates::Simple(simp.coordinates()),
+            Description::Composite(ref comp) => Coordinates::Composite(comp.coordinates()),
         }
     }
 
-    fn simple_coordinates(&self, simp: &SimpleGlyph<'a>) -> SimpleCoordinates<'a> {
+
+}
+
+pub enum Description<'a> {
+    Simple(SimpleGlyph<'a>),
+    Composite(CompositeGlyph<'a>),
+}
+
+pub enum Coordinates<'a> {
+    Simple(SimpleCoordinates<'a>),
+    Composite(CompositeCoordinates<'a>),
+}
+impl<'a> Iterator for Coordinates<'a> {
+    type Item = Coordinate;
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            Coordinates::Simple(simp) => simp.next(),
+            Coordinates::Composite(comp) => comp.next(),
+        }
+    }
+}
+
+pub struct SimpleGlyph<'a> {
+    end_points_of_contours: DynArr<'a, u16>,
+    instruction_length: u16,
+    instructions: DynArr<'a, u8>,
+    coords: BufView<'a, u8>,
+    // These are derived from coords
+    // flags: BufView<'a, u8>,
+    // x_coords: BufView<'a, u8>,
+    // y_coords: BufView<'a, u8>,
+}
+impl<'a> SimpleGlyph<'a> {
+    fn coordinates(&self) -> SimpleCoordinates<'a> {
         use std::marker::PhantomData;
-        let flags = simp.coords.cast::<SimpleFlags>();
+        let flags = self.coords.cast::<SimpleFlags>();
         let mut idx = 0;
         let mut xs_len = 0;
         let mut ys_len = 0;
         // Last point index in each countour is the highest,
         // last countour has the highest end point index. TODO: Verify
-        let last_point_index_offset = simp.end_points_of_contours.len() - 1;
+        let last_point_index_offset = self.end_points_of_contours.len() - 1;
         // Plus one since the index is zero-based
-        let mut points_left = 1 + simp.end_points_of_contours.at(last_point_index_offset) as usize;
+        let mut points_left = 1 + self.end_points_of_contours.at(last_point_index_offset) as usize;
         while points_left > 0 {
             let flag = flags.at(idx);
             assert!(!flag.intersects(SimpleFlags::RESERVED));
@@ -138,46 +171,6 @@ impl<'a> Glyph<'a> {
             y: 0,
         }
     }
-
-    fn composite_coordinates(&self, comp: &CompositeGlyph<'a>) -> CompositeCoordinates<'a> {
-        use std::marker::PhantomData;
-
-        let comp = match self.desc {
-            Description::Composite(ref comp) => comp,
-            _ => unimplemented!()
-        };
-        unimplemented!()
-    }
-}
-
-pub enum Description<'a> {
-    Simple(SimpleGlyph<'a>),
-    Composite(CompositeGlyph<'a>),
-}
-
-pub enum Coordinates<'a> {
-    Simple(SimpleCoordinates<'a>),
-    Composite(CompositeCoordinates<'a>),
-}
-impl<'a> Iterator for Coordinates<'a> {
-    type Item = Coordinate;
-    fn next(&mut self) -> Option<Self::Item> {
-        match self {
-            Coordinates::Simple(simp) => simp.next(),
-            Coordinates::Composite(comp) => comp.next(),
-        }
-    }
-}
-
-pub struct SimpleGlyph<'a> {
-    end_points_of_contours: DynArr<'a, u16>,
-    instruction_length: u16,
-    instructions: DynArr<'a, u8>,
-    coords: BufView<'a, u8>,
-    // These are derived from coords
-    // flags: BufView<'a, u8>,
-    // x_coords: BufView<'a, u8>,
-    // y_coords: BufView<'a, u8>,
 }
 
 bitflags! {
@@ -301,9 +294,18 @@ bitflags! {
     }
 }
 
-pub struct CompositeGlyph<'a>{
+pub struct CompositeGlyph<'a> {
     glyf: Glyf<'a>,
     components: &'a [u8]
+}
+
+impl<'a> CompositeGlyph<'a> {
+
+    fn coordinates(&self) -> CompositeCoordinates<'a> {
+        use std::marker::PhantomData;
+
+        unimplemented!()
+    }
 }
 
 #[derive(Parse)]
