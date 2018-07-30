@@ -46,8 +46,8 @@ impl<'a> Glyf<'a> {
             })
         } else { // Recommended that number_of_contours == -1
             Description::Composite(CompositeGlyph{
-                start: BufView(contents, PhantomData),
                 glyf: self.clone(),
+                components: contents,
 
             })
         };
@@ -79,6 +79,7 @@ impl<'a> Glyph<'a> {
             Description::Composite(ref comp) => Coordinates::Composite(self.composite_coordinates(comp)),
         }
     }
+
     fn simple_coordinates(&self, simp: &SimpleGlyph<'a>) -> SimpleCoordinates<'a> {
         use std::marker::PhantomData;
         let flags = simp.coords.cast::<SimpleFlags>();
@@ -138,7 +139,7 @@ impl<'a> Glyph<'a> {
         }
     }
 
-    fn composite_coordinates(&self, comp: &CompositeGlyph<'a>) -> CompositeCoordinates {
+    fn composite_coordinates(&self, comp: &CompositeGlyph<'a>) -> CompositeCoordinates<'a> {
         use std::marker::PhantomData;
 
         let comp = match self.desc {
@@ -156,7 +157,7 @@ pub enum Description<'a> {
 
 pub enum Coordinates<'a> {
     Simple(SimpleCoordinates<'a>),
-    Composite(CompositeCoordinates),
+    Composite(CompositeCoordinates<'a>),
 }
 impl<'a> Iterator for Coordinates<'a> {
     type Item = Coordinate;
@@ -300,10 +301,9 @@ bitflags! {
     }
 }
 
-#[derive(Parse)]
 pub struct CompositeGlyph<'a>{
-    start: BufView<'a, CompositeComponent>,
     glyf: Glyf<'a>,
+    components: &'a [u8]
 }
 
 #[derive(Parse)]
@@ -314,8 +314,13 @@ struct CompositeComponent {
     // arg2
 }
 
-pub struct CompositeCoordinates;
-impl Iterator for CompositeCoordinates {
+pub struct CompositeCoordinates<'a> {
+    glyf: Glyf<'a>,
+    components: &'a [u8],
+    component_idx: usize,
+    current: Option<SimpleCoordinates<'a>>,
+}
+impl<'a> Iterator for CompositeCoordinates<'a> {
     type Item = Coordinate;
     fn next(&mut self) -> Option<Self::Item> {
         None // TODO
