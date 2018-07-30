@@ -25,8 +25,8 @@ fn main() {
     // toy_ttf::parse::load_font(&font_buf);
 
     let font = Font::from_buffer(&font_buf).unwrap();
-    let glyph = font.get_glyph('S').unwrap(); // Codepoint is 188
-    // let glyph = font.get_glyph('¼').unwrap(); // Codepoint is 188
+    // let glyph = font.get_glyph('S').unwrap(); // Codepoint is 188
+    let glyph = font.get_glyph('¼').unwrap(); // Codepoint is 188
     draw_glyph(&font, glyph);
 
 }
@@ -60,10 +60,14 @@ fn render_glyph<'a>(font: &Font<'a>, raster: &mut Raster, affine: Affine, glyph:
         },
         Description::Composite(glyph) => {
             use toy_ttf::tables::glyf::Glyf;
+            use toy_ttf::tables::loca::Loca;
             for (sub_idx, sub_affine) in glyph.coordinates() {
                 let glyf: Glyf = font.get_table().unwrap();
-                let sub_glyph = glyf.at_offset(sub_idx).unwrap();
+                let loca: Loca = font.get_table().unwrap();
+                let offset = loca.at(sub_idx);
+                let sub_glyph = glyf.at_offset(offset as usize).unwrap();
 
+                // TODO Check affine order
                 render_glyph(font, raster, affine * sub_affine, sub_glyph);
             }
         },

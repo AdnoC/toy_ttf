@@ -279,7 +279,10 @@ impl<'a> CompositeGlyph<'a> {
     pub fn coordinates(&self) -> CompositeCoordinates<'a> {
         use std::marker::PhantomData;
 
-        unimplemented!()
+        CompositeCoordinates {
+            components: self.components,
+            has_more: true,
+        }
     }
 }
 
@@ -360,6 +363,7 @@ impl<'a> Iterator for CompositeCoordinates<'a> {
         };
 
         self.has_more = component_header.flags.contains(CompositeFlags::MORE_COMPONENTS);
+        self.components = buf;
         Some((component_header.glyph_index as usize, affine))
     }
 }
