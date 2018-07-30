@@ -25,7 +25,6 @@ impl<'a> Glyf<'a> {
         let (contents, header) = Header::parse(start);
         assert!(header.x_min < header.x_max);
         assert!(header.y_min < header.y_max);
-        assert!(header.number_of_contours >= 0);
         let desc = if header.number_of_contours > 0 {
             let end_pts_size = u16::approx_file_size() * header.number_of_contours as usize;
 
