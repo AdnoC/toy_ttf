@@ -85,12 +85,37 @@ impl Raster {
 // off_curve + off_curve = 2 curves with implied on_curve between the two
 pub struct DrawCommands<'a> {
     coords: SimpleCoordinates<'a>,
+    latest_on_curve: Option<Point>,
+    prev_off_curve: Option<Point>,
+    // Used to close the shape
+    first_coord: Option<Coordinate>,
 }
 
 impl<'a> Iterator for DrawCommands<'a> {
-    type Item = Coordinate;
+    type Item = DrawCommand;
 
     fn next(&mut self) -> Option<Self::Item> {
+        let mut next_coord = self.coords.next();
+        let next_coord = match next_coord {
+            Some(coord) => {
+                self.first_coord = Some(coord);
+                coord
+            },
+            None => {
+                if self.first_coord.is_some() {
+                    self.first_coord.take()
+                } else {
+                    return None;
+                }
+
+            },
+        };
+        // if let Some(prev_off_curve) = 
         unimplemented!()
     }
+}
+
+pub enum DrawCommand {
+    Line(Point, Point),
+    Curve(Point, Point, Point),
 }
