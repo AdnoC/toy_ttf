@@ -95,8 +95,14 @@ impl<'a> Iterator for DrawCommands<'a> {
     type Item = DrawCommand;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut next_coord = self.coords.next();
-        let next_coord = match next_coord {
+        fn coord_to_point(coord: Coordinate) -> Point {
+            Point {
+                x: coord.x as f32,
+                y: coord.y as f32
+            }
+        }
+
+        let next_coord = match self.coords.next() {
             Some(coord) => {
                 self.first_coord = Some(coord);
                 coord
@@ -106,8 +112,48 @@ impl<'a> Iterator for DrawCommands<'a> {
                 None => return None,
             },
         };
-        // if let Some(prev_off_curve) = self
-        unimplemented!()
+        let next_point = coord_to_point(next_coord);
+
+        let latest_on_curve = match self.latest_on_curve.take() {
+            Some(latest_on_curve) => latest_on_curve,
+            // Is first coordinate
+            None => {
+                assert!(next_coord.on_curve);
+                self.latest_on_curve = Some(next_point);
+                self.first_coord = Some(next_coord);
+
+                return self.next();
+            },
+        };
+        if next_coord.on_curve {
+            self.latest_on_curve = Some(next_point);
+        }
+
+        let command = match self.prev_off_curve.take() {
+            Some(prev_off_curve) => {
+                if next_coord.on_curve {
+                    DrawCommand::Curve(latest_on_curve, prev_off_curve, next_point)
+                } else {
+                    self.prev_off_curve = Some(next_point);
+                    let interp_point = Point {
+                        x: (prev_off_curve.x + next_coord.x as f32) / 2.,
+                        y: (prev_off_curve.y + next_coord.y as f32) / 2.,
+                    };
+                    self.latest_on_curve = Some(interp_point);
+                    DrawCommand::Curve(latest_on_curve, next_point, interp_point)
+                }
+            },
+            None => {
+                if next_coord.on_curve {
+                    DrawCommand::Line(latest_on_curve, next_point)
+                } else {
+                    self.prev_off_curve = Some(next_point);
+
+                    return self.next();
+                }
+            }
+        };
+        Some(command)
     }
 }
 
