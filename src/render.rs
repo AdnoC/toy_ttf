@@ -70,4 +70,11 @@ impl Raster {
             self.put_pixel(x, y, 0);
         }
     }
+
+    pub fn draw_curve(&mut self, start: Point, off_curve: Point, end: Point) {
+        unimplemented!()
+    }
 }
+
+// iterator from COordinates -> DrawCommand
+pub struct DrawCommands;
