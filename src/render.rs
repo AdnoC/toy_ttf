@@ -119,10 +119,7 @@ impl<'a> Iterator for DrawCommands<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let next_coord = match self.coords.next() {
-            Some(coord) => {
-                self.first_coord = Some(coord);
-                coord
-            },
+            Some(coord) => coord,
             None => match self.first_coord.take() {
                 // To close the shape
                 Some(coord) => coord,
@@ -131,6 +128,7 @@ impl<'a> Iterator for DrawCommands<'a> {
             },
         };
         let next_point = coord_to_point(next_coord);
+        println!("{:?}", next_coord);
 
         let latest_on_curve = match self.latest_on_curve {
             Some(latest_on_curve) => latest_on_curve,
