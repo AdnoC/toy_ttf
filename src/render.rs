@@ -101,16 +101,12 @@ impl<'a> Iterator for DrawCommands<'a> {
                 self.first_coord = Some(coord);
                 coord
             },
-            None => {
-                if self.first_coord.is_some() {
-                    self.first_coord.take()
-                } else {
-                    return None;
-                }
-
+            None => match self.first_coord.take() {
+                Some(coord) => coord,
+                None => return None,
             },
         };
-        // if let Some(prev_off_curve) = 
+        // if let Some(prev_off_curve) = self
         unimplemented!()
     }
 }
