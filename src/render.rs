@@ -1,5 +1,6 @@
 use image::GrayImage;
 use math::Point;
+use tables::glyf::{Coordinate, SimpleCoordinates};
 
 pub struct Raster(pub GrayImage);
 
@@ -77,5 +78,19 @@ impl Raster {
     }
 }
 
-// iterator from COordinates -> DrawCommand
-pub struct DrawCommands;
+// Iterator from Coordinate(s) -> DrawCommand
+// End points of contours can be derived from points
+// on_curve + on_curve = line
+// on_curve + off_curve + _ = curve
+// off_curve + off_curve = 2 curves with implied on_curve between the two
+pub struct DrawCommands<'a> {
+    coords: SimpleCoordinates<'a>,
+}
+
+impl<'a> Iterator for DrawCommands<'a> {
+    type Item = Coordinate;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        unimplemented!()
+    }
+}
