@@ -436,6 +436,10 @@ mod tests {
 
         let glyf: Glyf = font.get_table().unwrap();
         let glyph = glyf.at_offset(glyph_offset as usize).unwrap();
+        let glyph = match glyph.desc {
+            Description::Simple(glyph) => glyph,
+            _ => panic!("Should be simple"),
+        };
         for (actual, &expected) in glyph.coordinates().zip(expecteds.iter()) {
             assert_eq!(actual, expected);
         }
