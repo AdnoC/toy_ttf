@@ -132,7 +132,7 @@ impl<'a> Iterator for DrawCommands<'a> {
         };
         let next_point = coord_to_point(next_coord);
 
-        let latest_on_curve = match self.latest_on_curve.take() {
+        let latest_on_curve = match self.latest_on_curve {
             Some(latest_on_curve) => latest_on_curve,
             None => panic!("Should always have a previous on-curve point"),
         };
