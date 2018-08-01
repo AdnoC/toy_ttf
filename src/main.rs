@@ -1,7 +1,7 @@
 extern crate toy_ttf;
 use toy_ttf::tables::glyf::Glyph;
 use toy_ttf::math::{Point, Affine};
-use toy_ttf::render::Raster;
+use toy_ttf::render::*;
 use toy_ttf::font::*;
 
 #[allow(dead_code)]
@@ -25,8 +25,8 @@ fn main() {
     // toy_ttf::parse::load_font(&font_buf);
 
     let font = Font::from_buffer(&font_buf).unwrap();
-    // let glyph = font.get_glyph('S').unwrap(); // Codepoint is 188
-    let glyph = font.get_glyph('¼').unwrap(); // Codepoint is 188
+    let glyph = font.get_glyph('S').unwrap(); // Codepoint is 188
+    // let glyph = font.get_glyph('¼').unwrap(); // Codepoint is 188
     draw_glyph(&font, glyph);
 
 }
@@ -36,27 +36,30 @@ fn render_glyph<'a>(font: &Font<'a>, raster: &mut Raster, affine: Affine, glyph:
 
     match glyph.desc {
         Description::Simple(glyph) => {
-            let first_coord = glyph.coordinates().next().unwrap();
-            let mut last_coord = first_coord;
-            for (c1, c2) in glyph.coordinates().zip(glyph.coordinates().skip(1)) {
-                last_coord = c2;
-                draw_coords(raster, c1, c2, affine);
+            for dc in DrawCommands::from_coordinates(glyph.coordinates()) {
+                println!("{:?}", dc);
             }
-            draw_coords(raster, first_coord, last_coord, affine);
-
-
-            fn draw_coords(r: &mut Raster, c1: Coordinate, c2: Coordinate, af: Affine) {
-                let p1 = Point {
-                    x: c1.x as f32,
-                    y: c1.y as f32,
-                };
-                let p2 = Point {
-                    x: c2.x as f32,
-                    y: c2.y as f32,
-                };
-
-                r.draw_line(af * p1, af * p2);
-            }
+            // let first_coord = glyph.coordinates().next().unwrap();
+            // let mut last_coord = first_coord;
+            // for (c1, c2) in glyph.coordinates().zip(glyph.coordinates().skip(1)) {
+            //     last_coord = c2;
+            //     draw_coords(raster, c1, c2, affine);
+            // }
+            // draw_coords(raster, first_coord, last_coord, affine);
+            //
+            //
+            // fn draw_coords(r: &mut Raster, c1: Coordinate, c2: Coordinate, af: Affine) {
+            //     let p1 = Point {
+            //         x: c1.x as f32,
+            //         y: c1.y as f32,
+            //     };
+            //     let p2 = Point {
+            //         x: c2.x as f32,
+            //         y: c2.y as f32,
+            //     };
+            //
+            //     r.draw_line(af * p1, af * p2);
+            // }
         },
         Description::Composite(glyph) => {
             use toy_ttf::tables::glyf::Glyf;

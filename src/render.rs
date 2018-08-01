@@ -99,7 +99,7 @@ pub struct DrawCommands<'a> {
 }
 
 impl<'a> DrawCommands<'a> {
-    fn from_coordinates(mut coords: SimpleCoordinates<'a>) -> DrawCommands<'a> {
+    pub fn from_coordinates(mut coords: SimpleCoordinates<'a>) -> DrawCommands<'a> {
 
         let first_coord = coords.next();
         if let Some(first_coord) = &first_coord {
@@ -169,6 +169,7 @@ impl<'a> Iterator for DrawCommands<'a> {
     }
 }
 
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum DrawCommand {
     Line(Point, Point),
     Curve(Point, Point, Point),
