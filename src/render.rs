@@ -72,6 +72,7 @@ impl Raster {
     }
 
     pub fn draw_curve(&mut self, start: Point, off_curve: Point, end: Point) {
+        // p(t) = (1-t)^2*p0 + 2*t(1-t)*p1 + t^2*p2
         unimplemented!()
     }
 }
