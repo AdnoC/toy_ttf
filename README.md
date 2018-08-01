@@ -2,12 +2,8 @@ A toy .ttf renderer written in Rust.
 
 Very much work in progress.
 
-Currently working on: Parsing .ttf files
+Currently working on: Fast-track to rendering
 
-* Translating all table fields into Rust types
+* Just parse what is necessary
 
-    * Defining options as enums
-
-    * Removing implied fields (e.g. `count` fields are implied by `Vec` lengths)
-
-    * Wrapping strings into encoding-aware types
+* Leave error-handling for later, just panic for now
