@@ -78,6 +78,13 @@ impl Raster {
     }
 }
 
+fn coord_to_point(coord: Coordinate) -> Point {
+    Point {
+        x: coord.x as f32,
+        y: coord.y as f32
+    }
+}
+
 // Iterator from Coordinate(s) -> DrawCommand
 // End points of contours can be derived from points
 // on_curve + on_curve = line
@@ -91,24 +98,35 @@ pub struct DrawCommands<'a> {
     first_coord: Option<Coordinate>,
 }
 
+impl<'a> DrawCommands<'a> {
+    fn from_coordinates(mut coords: SimpleCoordinates<'a>) -> DrawCommands<'a> {
+
+        let first_coord = coords.next();
+        if let Some(first_coord) = &first_coord {
+            assert!(first_coord.on_curve);
+        }
+        DrawCommands {
+            coords,
+            first_coord,
+            latest_on_curve: first_coord.map(coord_to_point),
+            prev_off_curve: None,
+        }
+    }
+}
+
 impl<'a> Iterator for DrawCommands<'a> {
     type Item = DrawCommand;
 
     fn next(&mut self) -> Option<Self::Item> {
-        fn coord_to_point(coord: Coordinate) -> Point {
-            Point {
-                x: coord.x as f32,
-                y: coord.y as f32
-            }
-        }
-
         let next_coord = match self.coords.next() {
             Some(coord) => {
                 self.first_coord = Some(coord);
                 coord
             },
             None => match self.first_coord.take() {
+                // To close the shape
                 Some(coord) => coord,
+                // Stopping condition
                 None => return None,
             },
         };
@@ -116,15 +134,9 @@ impl<'a> Iterator for DrawCommands<'a> {
 
         let latest_on_curve = match self.latest_on_curve.take() {
             Some(latest_on_curve) => latest_on_curve,
-            // Is first coordinate
-            None => {
-                assert!(next_coord.on_curve);
-                self.latest_on_curve = Some(next_point);
-                self.first_coord = Some(next_coord);
-
-                return self.next();
-            },
+            None => panic!("Should always have a previous on-curve point"),
         };
+
         if next_coord.on_curve {
             self.latest_on_curve = Some(next_point);
         }
