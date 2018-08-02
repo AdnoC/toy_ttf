@@ -33,6 +33,7 @@ fn main() {
 
 fn render_glyph<'a>(font: &Font<'a>, raster: &mut Raster, affine: Affine, glyph: Glyph<'a>) {
     use toy_ttf::tables::glyf::{Coordinate, Description};
+    println!("Raster (w, h) = ({}, {})", raster.0.width(), raster.0.height());
 
     match glyph.desc {
         Description::Simple(glyph) => {
@@ -41,8 +42,7 @@ fn render_glyph<'a>(font: &Font<'a>, raster: &mut Raster, affine: Affine, glyph:
                 match dc {
                     DrawCommand::Line(p1, p2) => raster.draw_line(affine * p1, affine * p2),
                     DrawCommand::Curve(p1, m, p2) => {
-                        raster.draw_line(affine * p1, affine * m);
-                        raster.draw_line(affine * m, affine * p2);
+                        raster.draw_curve(affine * p1, affine * m, affine * p2);
                     },
                 }
             }

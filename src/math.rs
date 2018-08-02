@@ -1,4 +1,4 @@
-use std::ops::Mul;
+use std::ops::{Add, Mul};
 use std::convert::From;
 
 #[derive(Debug, PartialEq, PartialOrd, Clone, Copy)]
@@ -6,12 +6,47 @@ pub struct Point {
     pub x: f32,
     pub y: f32
 }
+impl Point {
+    pub fn distance_to(&self, other: Point) -> f32 {
+        let dx = self.x - other.x;
+        let dy = self.y - other.y;
+        (dx * dx + dy * dy).sqrt()
+    }
+
+    pub fn lerp_to(&self, other: Point, amount: f32) -> Point {
+        Point {
+            x: self.x + amount * (other.x - self.x),
+            y: self.y + amount * (other.y - self.y),
+        }
+    }
+}
 
 impl<T: Into<f32>> From<(T, T)> for Point {
     fn from(p: (T, T)) -> Point {
         Point {
             x: p.0.into(),
             y: p.1.into(),
+        }
+    }
+}
+
+impl Mul<f32> for Point {
+    type Output = Point;
+
+    fn mul(self, rhs: f32) -> Point {
+        Point {
+            x: self.x * rhs,
+            y: self.y * rhs,
+        }
+    }
+}
+impl Add for Point {
+    type Output = Point;
+
+    fn add(self, rhs: Point) -> Point {
+        Point {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
         }
     }
 }

@@ -74,7 +74,30 @@ impl Raster {
 
     pub fn draw_curve(&mut self, start: Point, off_curve: Point, end: Point) {
         // p(t) = (1-t)^2*p0 + 2*t(1-t)*p1 + t^2*p2
-        unimplemented!()
+
+        let dist1 = start.distance_to(off_curve);
+        let dist2 = end.distance_to(off_curve);
+        let interp_points = dist1 + dist2 + 2.;
+
+
+        let mut prev = start;
+        for i in 1..(interp_points.ceil() as i32 - 1) {
+            let t = interp_points.recip() * i as f32;
+
+            let p1 = start.lerp_to(off_curve, t);
+            let p2 = off_curve.lerp_to(end, t);
+            let p = p1.lerp_to(p2, t);
+            // let p1 = start * (1. - t) * (1. - t);
+            // let p2 = off_curve * 2. * t * (1. - t);
+            // let p3 = end * t * t;
+            // let p = p1 + p2 + p3;
+
+            self.draw_line(prev, p);
+            prev = p;
+        }
+        self.draw_line(prev, end);
+
+        // unimplemented!()
     }
 }
 
@@ -144,10 +167,7 @@ impl<'a> Iterator for DrawCommands<'a> {
                     DrawCommand::Curve(latest_on_curve, prev_off_curve, next_point)
                 } else {
                     self.prev_off_curve = Some(next_point);
-                    let interp_point = Point {
-                        x: (prev_off_curve.x + next_coord.x as f32) / 2.,
-                        y: (prev_off_curve.y + next_coord.y as f32) / 2.,
-                    };
+                    let interp_point = prev_off_curve.lerp_to(next_point, 0.5);
                     self.latest_on_curve = Some(interp_point);
                     DrawCommand::Curve(latest_on_curve, next_point, interp_point)
                 }
