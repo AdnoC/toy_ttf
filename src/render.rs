@@ -169,7 +169,7 @@ impl<'a> Iterator for DrawCommands<'a> {
                     self.prev_off_curve = Some(next_point);
                     let interp_point = prev_off_curve.lerp_to(next_point, 0.5);
                     self.latest_on_curve = Some(interp_point);
-                    DrawCommand::Curve(latest_on_curve, next_point, interp_point)
+                    DrawCommand::Curve(latest_on_curve, prev_off_curve, interp_point)
                 }
             },
             None => {
