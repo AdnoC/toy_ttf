@@ -86,17 +86,16 @@ fn coord_to_point(coord: Coordinate) -> Point {
 // on_curve + on_curve = line
 // on_curve + off_curve + _ = curve
 // off_curve + off_curve = 2 curves with implied on_curve between the two
-pub struct DrawCommands<'a> {
-    coords: SimpleCoordinates<'a>,
+pub struct DrawCommands<I: Iterator<Item = Coordinate>> {
+    coords: I,
     latest_on_curve: Option<Point>,
     prev_off_curve: Option<Point>,
     // Used to close the shape
     first_coord: Option<Coordinate>,
 }
 
-impl<'a> DrawCommands<'a> {
-    pub fn from_coordinates(mut coords: SimpleCoordinates<'a>) -> DrawCommands<'a> {
-
+impl<I: Iterator<Item = Coordinate>> DrawCommands<I> {
+    pub fn from_coordinates(mut coords: I) -> DrawCommands<I> {
         let first_coord = coords.next();
         if let Some(first_coord) = &first_coord {
             assert!(first_coord.on_curve);
@@ -110,7 +109,7 @@ impl<'a> DrawCommands<'a> {
     }
 }
 
-impl<'a> Iterator for DrawCommands<'a> {
+impl<I: Iterator<Item=Coordinate>> Iterator for DrawCommands<I> {
     type Item = DrawCommand;
 
     fn next(&mut self) -> Option<Self::Item> {
