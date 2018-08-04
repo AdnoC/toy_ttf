@@ -35,10 +35,18 @@ fn render_glyph<'a>(font: &Font<'a>, raster: &mut Raster, affine: Affine, glyph:
     use toy_ttf::tables::glyf::{Coordinate, Description};
     println!("Raster (w, h) = ({}, {})", raster.0.width(), raster.0.height());
 
+    fn affine_dc(affine: Affine, dc: DrawCommand) -> DrawCommand {
+        dc
+        // match dc {
+        //     DrawCommand::Line(p1, p2) => DrawCommand::Line(affine * p1, affine *  p2),
+        //     DrawCommand::Curve(p1, m, p2) => DrawCommand::Curve(affine*p1, affine*m, affine*p2),
+        // }
+    }
+
     match glyph.desc {
         Description::Simple(glyph) => {
             for dc in DrawCommands::from_coordinates(glyph.coordinates()) {
-                println!("{:?}", dc);
+                println!("{:?}", affine_dc(affine, dc));
                 match dc {
                     DrawCommand::Line(p1, p2) => raster.draw_line(affine * p1, affine * p2),
                     DrawCommand::Curve(p1, m, p2) => {
@@ -85,7 +93,7 @@ fn render_glyph<'a>(font: &Font<'a>, raster: &mut Raster, affine: Affine, glyph:
 }
 fn draw_glyph<'a>(font: &Font<'a>, glyph: Glyph<'a>) {
 
-    const PADDING: u32 = 50;
+    const PADDING: u32 = 0;
     let width = glyph.header.x_max - glyph.header.x_min;
     let height = glyph.header.y_max - glyph.header.y_min;
     let x_shift = (PADDING as i16 / 2) - glyph.header.x_min;

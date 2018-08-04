@@ -12,14 +12,38 @@ impl Raster {
         Raster(GrayImage::from_pixel(width, height, Luma { data: [0xFF] }))
     }
 
+    pub fn put_pixel(&mut self, x: u32, y: u32, brightness: u8) {
+        use image::Luma;
+        assert!(x < self.0.width());
+        assert!(y < self.0.height());
+        self.0.put_pixel(x, y, Luma { data: [brightness] });
+    }
+
+    pub fn draw_point(&mut self, p: Point, size: i32) {
+        for dx in (-size)..size {
+            for dy in (-size)..size {
+                let x = p.x as i32 + dx;
+                let y = p.y as i32 + dy;
+                if x < self.0.width() as i32 && x > 0
+                    && y < self.0.height() as i32 && y > 0 {
+                    let x = x as u32;
+                    let y = y as u32;
+                    self.put_pixel(x, y, 0);
+                }
+            }
+        }
+
+    }
+
     pub fn draw_line(&mut self, start: Point, end: Point) {
         use image::Luma;
+        // self.draw_point(start, 5);
+        // self.draw_point(end, 5);
         draw_antialiased_line_segment_mut(&mut self.0,
-                                      (start.x as i32, start.y as i32),
-                                      (end.x as i32, end.y as i32),
-                                      Luma { data: [0] },
-                                      interpolate
-                                      );
+                                          (start.x as i32, start.y as i32),
+                                          (end.x as i32, end.y as i32),
+                                          Luma { data: [0] },
+                                          interpolate);
     }
     pub fn draw_curve(&mut self, start: Point, off_curve: Point, end: Point) {
         // p(t) = (1-t)^2*p0 + 2*t(1-t)*p1 + t^2*p2
