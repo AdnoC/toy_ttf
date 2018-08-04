@@ -147,6 +147,12 @@ impl<'a> SimpleGlyph<'a> {
             y: 0,
         }
     }
+
+    pub fn contour_lengths(&self) -> impl 'a + Iterator<Item = u16> {
+        self.end_points_of_contours.iter()
+            .zip([0].into_iter().cloned().chain(self.end_points_of_contours.iter()))
+            .map(|(cur, prev)| cur - prev)
+    }
 }
 
 bitflags! {
