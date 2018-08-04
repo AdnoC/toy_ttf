@@ -150,7 +150,9 @@ impl<'a> SimpleGlyph<'a> {
 
     pub fn contour_lengths(&self) -> impl 'a + Iterator<Item = u16> {
         self.end_points_of_contours.iter()
-            .zip([0].into_iter().cloned().chain(self.end_points_of_contours.iter()))
+            .map(|val| val + 1) // To fix off-by-one error for first contour
+            .zip([0].into_iter().cloned().chain(self.end_points_of_contours.iter()
+                                                .map(|val| val+1)))
             .map(|(cur, prev)| cur - prev)
     }
 }
