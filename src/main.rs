@@ -45,15 +45,19 @@ fn render_glyph<'a>(font: &Font<'a>, raster: &mut Raster, affine: Affine, glyph:
 
     match glyph.desc {
         Description::Simple(glyph) => {
-            for dc in DrawCommands::from_coordinates(glyph.coordinates()) {
-                println!("{:?}", affine_dc(affine, dc));
-                match dc {
-                    DrawCommand::Line(p1, p2) => raster.draw_line(affine * p1, affine * p2),
-                    DrawCommand::Curve(p1, m, p2) => {
-                        raster.draw_curve(affine * p1, affine * m, affine * p2);
-                    },
+            for contour in glyph.contours() {
+                for dc in DrawCommands::from_coordinates(contour.into_iter()) {
+                    println!("{:?}", affine_dc(affine, dc));
+                    match dc {
+                        DrawCommand::Line(p1, p2) => raster.draw_line(affine * p1, affine * p2),
+                        DrawCommand::Curve(p1, m, p2) => {
+                            raster.draw_curve(affine * p1, affine * m, affine * p2);
+                        },
+                    }
                 }
             }
+
+
             // let first_coord = glyph.coordinates().next().unwrap();
             // let mut last_coord = first_coord;
             // for (c1, c2) in glyph.coordinates().zip(glyph.coordinates().skip(1)) {
