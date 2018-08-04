@@ -53,6 +53,7 @@ extern crate byteorder;
 extern crate itertools;
 
 extern crate image;
+extern crate imageproc;
 
 #[macro_use]
 extern crate bitflags;
