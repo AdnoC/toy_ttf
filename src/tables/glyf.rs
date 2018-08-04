@@ -155,6 +155,13 @@ impl<'a> SimpleGlyph<'a> {
                                                 .map(|val| val+1)))
             .map(|(cur, prev)| cur - prev)
     }
+
+    pub fn contours(&self) -> Contours<'a, impl 'a + Iterator<Item = u16>> {
+        Contours {
+            coords: self.coordinates(),
+            lengths: self.contour_lengths(),
+        }
+    }
 }
 
 bitflags! {
@@ -187,6 +194,34 @@ pub struct SimpleCoordinates<'a> {
     x: i16,
     y: i16,
 }
+
+// A more efficient way of iterating over contours:
+// ```
+// let glyph: Glyph = unimplemented!();
+// let coords = glyph.coordinates();
+// let lengths = glyph.contour_lengths();
+// for len in lengths {
+//   let contour = coords.by_ref().take(len as usize);
+//   // do stuff on the contour
+// }
+// ```
+pub struct Contours<'a, LI: Iterator<Item = u16>> {
+    coords: SimpleCoordinates<'a>,
+    lengths: LI,
+}
+impl<'a, LI: Iterator<Item = u16>> Iterator for Contours<'a, LI> {
+    // This really sucks. Really wish we had GATs.
+    type Item = Vec<Coordinate>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let len = self.lengths.next()?;
+        let contour = self.coords.by_ref()
+            .take(len as usize)
+            .collect();
+        Some(contour)
+    }
+}
+
 impl<'a> Iterator for SimpleCoordinates<'a> {
     type Item = Coordinate;
 
