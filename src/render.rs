@@ -180,6 +180,7 @@ impl Raster {
         //                                   Luma { data: [pix_val] },
         //                                   interpolate_directed);
     }
+
     pub fn draw_curve(&mut self, start: Point, off_curve: Point, end: Point) {
         for (a, b) in CurveLines::new(start, off_curve, end) {
             self.draw_line(a, b);
@@ -330,6 +331,41 @@ impl<I: Iterator<Item=Coordinate>> Iterator for DrawCommands<I> {
 pub enum DrawCommand {
     Line(Point, Point),
     Curve(Point, Point, Point),
+}
+
+pub struct FlattenedDrawCommands<I: Iterator<Item=Coordinate>> {
+    inner: DrawCommands<I>,
+    current_curve: Option<CurveLines>,
+}
+impl<I: Iterator<Item = Coordinate>> FlattenedDrawCommands<I> {
+    pub fn from_coordinates(coords: I) -> FlattenedDrawCommands<I> {
+        FlattenedDrawCommands {
+            inner: DrawCommands::from_coordinates(coords),
+            current_curve: None,
+        }
+    }
+}
+impl<I: Iterator<Item=Coordinate>> Iterator for FlattenedDrawCommands<I> {
+    type Item = (Point, Point);
+    fn next(&mut self) -> Option<Self::Item> {
+        let curve_line = self.current_curve.as_mut().and_then(|inner| inner.next());
+        if curve_line.is_some() {
+            return curve_line;
+        } else {
+            self.current_curve = None;
+        }
+        let dc = self.inner.next()?;
+
+        match dc {
+            DrawCommand::Line(start, end) => Some((start, end)),
+            DrawCommand::Curve(start, off_curve, end) => {
+                let mut curve = CurveLines::new(start, off_curve, end);
+                let segment = curve.next();
+                self.current_curve = Some(curve);
+                segment
+            }
+        }
+    }
 }
 
 #[cfg(test)]
