@@ -31,9 +31,8 @@ fn main() {
 
 }
 
-fn render_glyph<'a>(font: &Font<'a>, raster: &mut Raster, affine: Affine, glyph: Glyph<'a>) {
+fn render_glyph<'a>(font: &Font<'a>, raster: &mut impl Raster, affine: Affine, glyph: Glyph<'a>) {
     use toy_ttf::tables::glyf::{Coordinate, Description};
-    println!("Raster (w, h) = ({}, {})", raster.0.width(), raster.0.height());
 
     fn affine_dc(affine: Affine, dc: DrawCommand) -> DrawCommand {
         dc
@@ -59,7 +58,7 @@ fn render_glyph<'a>(font: &Font<'a>, raster: &mut Raster, affine: Affine, glyph:
             for contour in glyph.contours() {
                 for (start, end) in FlattenedDrawCommands::from_coordinates(contour.into_iter()) {
                     println!("({:?}, {:?})", affine*start, affine*end);
-                    raster.draw_line(affine * start, affine * end);
+                    raster.add_line(affine * start, affine * end);
                 }
             }
 
@@ -110,12 +109,14 @@ fn draw_glyph<'a>(font: &Font<'a>, glyph: Glyph<'a>) {
     let y_shift = (PADDING as i16 / 2) - glyph.header.y_min;
     let affine = Affine::translation(x_shift, y_shift);
 
-    let mut raster = Raster::new(width as u32 + PADDING, height as u32 + PADDING);
+    println!("Raster (w, h) = ({}, {})", width as u32 + PADDING, height as u32 + PADDING);
+    let mut raster = ColorDirectedRaster::new(width as u32 + PADDING, height as u32 + PADDING);
+    // let mut raster = OutlineRaster::new(width as u32 + PADDING, height as u32 + PADDING);
 
     render_glyph(font, &mut raster, affine, glyph);
 
     const img_file: &str = "RASTER_RESULT.bmp";
-    raster.into_gray_image().save(img_file).unwrap();
+    raster.into_dynamic().save(img_file).unwrap();
 }
 
 fn load_file(name: &str) -> Vec<u8> {

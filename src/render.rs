@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use image::{ImageBuffer, Luma, GrayImage};
+use image::{ImageBuffer, Luma, GrayImage, DynamicImage, RgbImage};
 use imageproc::drawing::draw_antialiased_line_segment_mut; // TODO: Pick ONE draw_line func
 use imageproc::drawing::draw_line_segment_mut;
 use math::Point;
@@ -7,105 +7,33 @@ use tables::glyf::{Coordinate, SimpleCoordinates};
 
 type GrayDirectedImage = ImageBuffer<Luma<i16>, Vec<i16>>;
 
-pub struct Raster(pub GrayDirectedImage, u64);
+pub trait Raster {
+    fn new(width: u32, height: u32) -> Self; // Just for convenience of not needing another impl block
+    fn add_line(&mut self, start: Point, end: Point);
+    fn into_dynamic(self) -> DynamicImage;
+}
 
-impl Raster {
-    pub fn new(width: u32, height: u32) -> Raster {
-        Raster(
-            GrayDirectedImage::from_pixel(width, height, Luma { data: [0] }),
-            0
+pub struct OutlineRaster(pub GrayImage);
+impl Raster for OutlineRaster {
+    fn new(width: u32, height: u32) -> Self {
+        OutlineRaster(
+            GrayImage::from_pixel(width, height, Luma { data: [0] }),
         )
     }
-
-    pub fn into_gray_image(self) -> GrayImage  {
+    fn add_line(&mut self, start: Point, end: Point) {
         use std::u8;
-        use std::slice::Iter as SliceIter;
-        use std::iter::{Map, Cloned};
-
-        #[allow(dead_code)]
-        fn fill_in<'a>(row: SliceIter<'a, i16>) -> Map<
-            Cloned<SliceIter<'a, i16>>,
-            impl FnMut(i16) -> u8> {
-            let mut count = 0;
-            let apply_winding_rule = move |pix: i16| {
-                if pix > 0 {
-                    count += 1;
-                } else if pix < 0 {
-                    count -= 1;
-                }
-                if count != 0 {
-                    u8::MAX
-                } else {
-                    0
-                }
-            };
-            row.into_iter().cloned().map(apply_winding_rule)
-        }
-        #[allow(dead_code)]
-        fn just_outline<'a>(row: SliceIter<'a, i16>) -> Map<
-            Cloned<SliceIter<'a, i16>>,
-            impl FnMut(i16) -> u8> {
-            row.into_iter()
-                .cloned()
-                // .map(|pix: i16| pix.abs().min(u8::MAX as i16) as u8)
-                .map(|pix: i16| {
-                    let pix = if pix > 0 {
-                        u8::MAX as i16
-                    } else if pix < 0 {
-                        u8::MAX as i16 / 2
-                    } else { 0 };
-                    pix as u8
-// pix.abs().min(u8::MAX as i16) as u8
-                })
-        }
-
-        // let rgb_outline = |row| {
-        //     row.into_iter()
-        //         .cloned()
-        //         .map(|pix| {
-        //             if pix > 0 {
-        //                 &[u8::MAX, 0, 0]
-        //             } else if pix < 0 {
-        //                 &[0, u8::MAX, 0]
-        //             } else { &[0, 0, 0] }
-        //         })
-        //         .flatten()
-        //         .cloned()
-        // }
-
-        let width = self.0.width();
-        let height = self.0.height();
-        let data: Vec<u8> = self.0.into_vec()
-            .chunks(width as usize)
-            .into_iter()
-            .map(|row| fill_in(row.into_iter()))
-            .flatten()
-            .collect();
-        GrayImage::from_vec(width, height, data).expect("Couldn't re-create GrayImage")
+        draw_line_segment_mut(&mut self.0,
+                              (start.x as f32, start.y as f32),
+                              (end.x as f32, end.y as f32),
+                              Luma { data: [u8::MAX] });
     }
-
-    pub fn put_pixel(&mut self, x: u32, y: u32, brightness: i16) {
-        assert!(x < self.0.width());
-        assert!(y < self.0.height());
-        self.0.put_pixel(x, y, Luma { data: [brightness] });
+    fn into_dynamic(self) -> DynamicImage {
+        DynamicImage::ImageLuma8(self.0)
     }
+}
 
-    pub fn draw_point(&mut self, p: Point, size: i32) {
-        for dx in (-size)..size {
-            for dy in (-size)..size {
-                let x = p.x as i32 + dx;
-                let y = p.y as i32 + dy;
-                if x < self.0.width() as i32 && x > 0
-                    && y < self.0.height() as i32 && y > 0 {
-                    let x = x as u32;
-                    let y = y as u32;
-                    self.put_pixel(x, y, 0);
-                }
-            }
-        }
-
-    }
-
+pub struct ColorDirectedRaster(pub GrayDirectedImage);
+impl ColorDirectedRaster {
     /// Returns a pixel value that follows the winding rule.
     ///
     /// Positive if count should be incremented, negative if it should be
@@ -142,7 +70,15 @@ impl Raster {
         }
     }
 
-    pub fn draw_line(&mut self, start: Point, end: Point) {
+}
+impl Raster for ColorDirectedRaster {
+    fn new(width: u32, height: u32) -> Self {
+        use image::Rgb;
+        ColorDirectedRaster(
+            GrayDirectedImage::from_pixel(width, height, Luma { data: [0] }),
+        )
+    }
+    fn add_line(&mut self, start: Point, end: Point) {
         fn interpolate_directed(a: Luma<i16>, b: Luma<i16>, weight: f32) -> Luma<i16> {
             let a = a.data[0] as f32;
             let b = b.data[0] as f32;
@@ -180,12 +116,141 @@ impl Raster {
         //                                   Luma { data: [pix_val] },
         //                                   interpolate_directed);
     }
+    fn into_dynamic(self) -> DynamicImage {
+        use std::u8;
 
-    pub fn draw_curve(&mut self, start: Point, off_curve: Point, end: Point) {
-        for (a, b) in CurveLines::new(start, off_curve, end) {
-            self.draw_line(a, b);
-        }
+        let width = self.0.width();
+        let height = self.0.height();
+        let data: Vec<u8> = self.0.into_vec()
+            .chunks(width as usize)
+            .into_iter()
+            .map(|row| {
+                row.into_iter()
+                    .cloned()
+                    .map(|pix| {
+                        if pix > 0 {
+                            &[u8::MAX, 0, 0]
+                        } else if pix < 0 {
+                            &[0, u8::MAX, 0]
+                        } else { &[0, 0, 0] }
+                    })
+                    .flatten()
+                    .cloned()
+            })
+            .flatten()
+            .collect();
+        let rgb = RgbImage::from_vec(width, height, data)
+            .expect("Couldn't re-create RgbImage");
+        DynamicImage::ImageRgb8(rgb)
     }
+}
+
+pub struct GenRaster(pub GrayDirectedImage, u64);
+
+impl GenRaster {
+//     pub fn new(width: u32, height: u32) -> GenRaster {
+//         GenRaster(
+//             GrayDirectedImage::from_pixel(width, height, Luma { data: [0] }),
+//             0
+//         )
+//     }
+//
+//     pub fn into_gray_image(self) -> GrayImage  {
+//         use std::u8;
+//         use std::slice::Iter as SliceIter;
+//         use std::iter::{Map, Cloned};
+//
+//         #[allow(dead_code)]
+//         fn fill_in<'a>(row: SliceIter<'a, i16>) -> Map<
+//             Cloned<SliceIter<'a, i16>>,
+//             impl FnMut(i16) -> u8> {
+//             let mut count = 0;
+//             let apply_winding_rule = move |pix: i16| {
+//                 if pix > 0 {
+//                     count += 1;
+//                 } else if pix < 0 {
+//                     count -= 1;
+//                 }
+//                 if count != 0 {
+//                     u8::MAX
+//                 } else {
+//                     0
+//                 }
+//             };
+//             row.into_iter().cloned().map(apply_winding_rule)
+//         }
+//         #[allow(dead_code)]
+//         fn just_outline<'a>(row: SliceIter<'a, i16>) -> Map<
+//             Cloned<SliceIter<'a, i16>>,
+//             impl FnMut(i16) -> u8> {
+//             row.into_iter()
+//                 .cloned()
+//                 // .map(|pix: i16| pix.abs().min(u8::MAX as i16) as u8)
+//                 .map(|pix: i16| {
+//                     let pix = if pix > 0 {
+//                         u8::MAX as i16
+//                     } else if pix < 0 {
+//                         u8::MAX as i16 / 2
+//                     } else { 0 };
+//                     pix as u8
+// // pix.abs().min(u8::MAX as i16) as u8
+//                 })
+//         }
+//
+//         // let rgb_outline = |row| {
+//         //     row.into_iter()
+//         //         .cloned()
+//         //         .map(|pix| {
+//         //             if pix > 0 {
+//         //                 &[u8::MAX, 0, 0]
+//         //             } else if pix < 0 {
+//         //                 &[0, u8::MAX, 0]
+//         //             } else { &[0, 0, 0] }
+//         //         })
+//         //         .flatten()
+//         //         .cloned()
+//         // }
+//
+//         let width = self.0.width();
+//         let height = self.0.height();
+//         let data: Vec<u8> = self.0.into_vec()
+//             .chunks(width as usize)
+//             .into_iter()
+//             .map(|row| fill_in(row.into_iter()))
+//             .flatten()
+//             .collect();
+//         GrayImage::from_vec(width, height, data).expect("Couldn't re-create GrayImage")
+//     }
+//
+//     pub fn put_pixel(&mut self, x: u32, y: u32, brightness: i16) {
+//         assert!(x < self.0.width());
+//         assert!(y < self.0.height());
+//         self.0.put_pixel(x, y, Luma { data: [brightness] });
+//     }
+//
+//     pub fn draw_point(&mut self, p: Point, size: i32) {
+//         for dx in (-size)..size {
+//             for dy in (-size)..size {
+//                 let x = p.x as i32 + dx;
+//                 let y = p.y as i32 + dy;
+//                 if x < self.0.width() as i32 && x > 0
+//                     && y < self.0.height() as i32 && y > 0 {
+//                     let x = x as u32;
+//                     let y = y as u32;
+//                     self.put_pixel(x, y, 0);
+//                 }
+//             }
+//         }
+//
+//     }
+//
+//
+//
+//     pub fn draw_curve(&mut self, start: Point, off_curve: Point, end: Point) {
+//         for (a, b) in CurveLines::new(start, off_curve, end) {
+//             self.draw_line(a, b);
+//         }
+//     }
 }
 
 pub struct CurveLines {
