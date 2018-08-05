@@ -69,11 +69,9 @@ impl ColorDirectedRaster {
             u8::MAX as i16
         }
     }
-
 }
 impl Raster for ColorDirectedRaster {
     fn new(width: u32, height: u32) -> Self {
-        use image::Rgb;
         ColorDirectedRaster(
             GrayDirectedImage::from_pixel(width, height, Luma { data: [0] }),
         )
@@ -145,83 +143,121 @@ impl Raster for ColorDirectedRaster {
     }
 }
 
-pub struct GenRaster(pub GrayDirectedImage, u64);
+pub struct BadFilledRaster(pub GrayDirectedImage);
+impl BadFilledRaster {
+    /// Returns a pixel value that follows the winding rule.
+    ///
+    /// Positive if count should be incremented, negative if it should be
+    /// decremented.
+    ///
+    /// Assuming rays travel along the positive x-axis
+    ///
+    /// From
+    /// https://developer.apple.com/fonts/TrueType-Reference-Manual/RM02/Chap2.html#distinguishing
+    ///
+    /// Add one to the count each time a glyph contour crosses the ray from right
+    /// to left or bottom to top. (Such a crossing is termed an on-transition
+    /// because the TrueType scan converter scans from left to right and bottom to top.)
+    ///
+    /// Subtract one from the count each time a contour of the glyph crosses the
+    /// ray from left to right or top to bottom. (Such a crossing is termed an
+    /// off-transition.)
+    fn directioned_value(start: Point, end: Point) -> i16 {
+        use std::u8;
+        if start.y == end.y {
+            // Right -> Left
+            if start.x > end.x {
+                u8::MAX as i16
+            // Left -> Right
+            } else {
+                -(u8::MAX as i16)
+            }
+        // Top -> Bottom
+        } else if start.y > end.y {
+            -(u8::MAX as i16)
+        // Bottom -> Top
+        } else {
+            u8::MAX as i16
+        }
+    }
+}
 
-impl GenRaster {
-//     pub fn new(width: u32, height: u32) -> GenRaster {
-//         GenRaster(
-//             GrayDirectedImage::from_pixel(width, height, Luma { data: [0] }),
-//             0
-//         )
-//     }
-//
-//     pub fn into_gray_image(self) -> GrayImage  {
-//         use std::u8;
-//         use std::slice::Iter as SliceIter;
-//         use std::iter::{Map, Cloned};
-//
-//         #[allow(dead_code)]
-//         fn fill_in<'a>(row: SliceIter<'a, i16>) -> Map<
-//             Cloned<SliceIter<'a, i16>>,
-//             impl FnMut(i16) -> u8> {
-//             let mut count = 0;
-//             let apply_winding_rule = move |pix: i16| {
-//                 if pix > 0 {
-//                     count += 1;
-//                 } else if pix < 0 {
-//                     count -= 1;
-//                 }
-//                 if count != 0 {
-//                     u8::MAX
-//                 } else {
-//                     0
-//                 }
-//             };
-//             row.into_iter().cloned().map(apply_winding_rule)
-//         }
-//         #[allow(dead_code)]
-//         fn just_outline<'a>(row: SliceIter<'a, i16>) -> Map<
-//             Cloned<SliceIter<'a, i16>>,
-//             impl FnMut(i16) -> u8> {
-//             row.into_iter()
-//                 .cloned()
-//                 // .map(|pix: i16| pix.abs().min(u8::MAX as i16) as u8)
-//                 .map(|pix: i16| {
-//                     let pix = if pix > 0 {
-//                         u8::MAX as i16
-//                     } else if pix < 0 {
-//                         u8::MAX as i16 / 2
-//                     } else { 0 };
-//                     pix as u8
-// // pix.abs().min(u8::MAX as i16) as u8
-//                 })
-//         }
-//
-//         // let rgb_outline = |row| {
-//         //     row.into_iter()
-//         //         .cloned()
-//         //         .map(|pix| {
-//         //             if pix > 0 {
-//         //                 &[u8::MAX, 0, 0]
-//         //             } else if pix < 0 {
-//         //                 &[0, u8::MAX, 0]
-//         //             } else { &[0, 0, 0] }
-//         //         })
-//         //         .flatten()
-//         //         .cloned()
-//         // }
-//
-//         let width = self.0.width();
-//         let height = self.0.height();
-//         let data: Vec<u8> = self.0.into_vec()
-//             .chunks(width as usize)
-//             .into_iter()
-//             .map(|row| fill_in(row.into_iter()))
-//             .flatten()
-//             .collect();
-//         GrayImage::from_vec(width, height, data).expect("Couldn't re-create GrayImage")
-//     }
-//
+impl Raster for BadFilledRaster {
+    fn new(width: u32, height: u32) -> Self {
+        BadFilledRaster(
+            GrayDirectedImage::from_pixel(width, height, Luma { data: [0] }),
+        )
+    }
+    fn add_line(&mut self, start: Point, end: Point) {
+        fn interpolate_directed(a: Luma<i16>, b: Luma<i16>, weight: f32) -> Luma<i16> {
+            let a = a.data[0] as f32;
+            let b = b.data[0] as f32;
+
+            let weighted_a = a * weight;
+            let weighted_b = b * (1. - weight);
+
+            let abs_result = weighted_a.abs() + weighted_b.abs();
+
+            let highest_mag_val = if weighted_a.abs() > weighted_b.abs() {
+                weighted_a
+            } else {
+                weighted_b
+            };
+
+            let result = if highest_mag_val > 0. {
+                abs_result
+            } else {
+                -abs_result
+            };
+
+            Luma { data: [result as i16] }
+        }
+        // self.draw_point(start, 5);
+        // self.draw_point(end, 5);
+        // let pix_val = Self::directioned_value(start, end);
+        let pix_val = Self::directioned_value(start, end);
+        draw_line_segment_mut(&mut self.0,
+                              (start.x as f32, start.y as f32),
+                              (end.x as f32, end.y as f32),
+                              Luma { data: [pix_val] });
+        // draw_antialiased_line_segment_mut(&mut self.0,
+        //                                   (start.x as i32, start.y as i32),
+        //                                   (end.x as i32, end.y as i32),
+        //                                   Luma { data: [pix_val] },
+        //                                   interpolate_directed);
+    }
+    fn into_dynamic(self) -> DynamicImage {
+        use std::u8;
+
+        let width = self.0.width();
+        let height = self.0.height();
+        let data: Vec<u8> = self.0.into_vec()
+            .chunks(width as usize)
+            .into_iter()
+            .map(|row| {
+                let mut count = 0;
+                let apply_winding_rule = move |pix: i16| {
+                    if pix > 0 {
+                        count += 1;
+                    } else if pix < 0 {
+                        count -= 1;
+                    }
+                    if count != 0 {
+                        u8::MAX
+                    } else {
+                        0
+                    }
+                };
+                row.into_iter().cloned().map(apply_winding_rule)
+            })
+            .flatten()
+            .collect();
+        let img = GrayImage::from_vec(width, height, data)
+            .expect("Couldn't re-create GrayImage");
+        DynamicImage::ImageLuma8(img)
+    }
+}
+// impl GenRaster {
 //     pub fn put_pixel(&mut self, x: u32, y: u32, brightness: i16) {
 //         assert!(x < self.0.width());
 //         assert!(y < self.0.height());
@@ -251,7 +287,7 @@ impl GenRaster {
 //             self.draw_line(a, b);
 //         }
 //     }
-}
+// }
 
 pub struct CurveLines {
     start: Point,
