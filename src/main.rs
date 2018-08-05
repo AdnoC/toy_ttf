@@ -109,7 +109,7 @@ fn draw_glyph<'a>(font: &Font<'a>, glyph: Glyph<'a>) {
     render_glyph(font, &mut raster, affine, glyph);
 
     const img_file: &str = "RASTER_RESULT.bmp";
-    raster.0.save(img_file).unwrap();
+    raster.into_gray_image().save(img_file).unwrap();
 }
 
 fn load_file(name: &str) -> Vec<u8> {

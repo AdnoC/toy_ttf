@@ -1,19 +1,48 @@
-use image::GrayImage;
-use imageproc::drawing::draw_antialiased_line_segment_mut;
-use imageproc::pixelops::interpolate;
+use itertools::Itertools;
+use image::{ImageBuffer, Luma, GrayImage};
+// use imageproc::drawing::draw_antialiased_line_segment_mut;
+use imageproc::drawing::draw_line_segment_mut;
 use math::Point;
 use tables::glyf::{Coordinate, SimpleCoordinates};
 
-pub struct Raster(pub GrayImage);
+type GrayDirectedImage = ImageBuffer<Luma<i16>, Vec<i16>>;
+
+pub struct Raster(pub GrayDirectedImage);
 
 impl Raster {
     pub fn new(width: u32, height: u32) -> Raster {
-        use image::Luma;
-        Raster(GrayImage::from_pixel(width, height, Luma { data: [0xFF] }))
+        Raster(GrayDirectedImage::from_pixel(width, height, Luma { data: [0] }))
     }
 
-    pub fn put_pixel(&mut self, x: u32, y: u32, brightness: u8) {
-        use image::Luma;
+    pub fn into_gray_image(self) -> GrayImage {
+        let width = self.0.width();
+        let height = self.0.height();
+        let data: Vec<u8> = self.0.into_vec()
+            .chunks(width as usize)
+            .map(|row| {
+                use std::u8;
+
+                let mut count = 0;
+                let apply_winding_rule = move |&pix: &i16| {
+                    if pix > 0 {
+                        count += 1;
+                    } else if pix < 0 {
+                        count -= 1;
+                    }
+                    if count != 0 {
+                        u8::MAX
+                    } else {
+                        0
+                    }
+                };
+                row.into_iter().map(apply_winding_rule)
+            })
+            .flatten()
+            .collect();
+        GrayImage::from_vec(width, height, data).expect("Couldn't re-create GrayImage")
+    }
+
+    pub fn put_pixel(&mut self, x: u32, y: u32, brightness: i16) {
         assert!(x < self.0.width());
         assert!(y < self.0.height());
         self.0.put_pixel(x, y, Luma { data: [brightness] });
@@ -35,15 +64,78 @@ impl Raster {
 
     }
 
+    /// Returns a pixel value that follows the winding rule.
+    ///
+    /// Positive if count should be incremented, negative if it should be
+    /// decremented.
+    ///
+    /// Assuming rays travel along the positive x-axis
+    ///
+    /// From
+    /// https://developer.apple.com/fonts/TrueType-Reference-Manual/RM02/Chap2.html#distinguishing
+    ///
+    /// Add one to the count each time a glyph contour crosses the ray from right
+    /// to left or bottom to top. (Such a crossing is termed an on-transition
+    /// because the TrueType scan converter scans from left to right and bottom to top.)
+    ///
+    /// Subtract one from the count each time a contour of the glyph crosses the
+    /// ray from left to right or top to bottom. (Such a crossing is termed an
+    /// off-transition.)
+    fn directioned_value(start: Point, end: Point) -> i16 {
+        use std::u8;
+        if start.y == end.y {
+            // Right -> Left
+            if start.x > end.x {
+                u8::MAX as i16
+            // Left -> Right
+            } else {
+                -(u8::MAX as i16)
+            }
+        // Top -> Bottom
+        } else if start.y > end.y {
+            -(u8::MAX as i16)
+        // Bottom -> Top
+        } else {
+            u8::MAX as i16
+        }
+    }
+
     pub fn draw_line(&mut self, start: Point, end: Point) {
-        use image::Luma;
+        fn interpolate_directed(a: Luma<i16>, b: Luma<i16>, weight: f32) -> Luma<i16> {
+            let a = a.data[0] as f32;
+            let b = b.data[0] as f32;
+
+            let weighted_a = a * weight;
+            let weighted_b = b * (1. - weight);
+
+            let abs_result = weighted_a.abs() + weighted_b.abs();
+
+            let highest_mag_val = if weighted_a.abs() > weighted_b.abs() {
+                weighted_a
+            } else {
+                weighted_b
+            };
+
+            let result = if highest_mag_val > 0. {
+                abs_result
+            } else {
+                -abs_result
+            };
+
+            Luma { data: [result as i16] }
+        }
         // self.draw_point(start, 5);
         // self.draw_point(end, 5);
-        draw_antialiased_line_segment_mut(&mut self.0,
-                                          (start.x as i32, start.y as i32),
-                                          (end.x as i32, end.y as i32),
-                                          Luma { data: [0] },
-                                          interpolate);
+        let pix_val = Self::directioned_value(start, end);
+        draw_line_segment_mut(&mut self.0,
+                              (start.x as f32, start.y as f32),
+                              (end.x as f32, end.y as f32),
+                              Luma { data: [pix_val] });
+        // draw_antialiased_line_segment_mut(&mut self.0,
+        //                                   (start.x as i32, start.y as i32),
+        //                                   (end.x as i32, end.y as i32),
+        //                                   Luma { data: [pix_val] },
+        //                                   interpolate_directed);
     }
     pub fn draw_curve(&mut self, start: Point, off_curve: Point, end: Point) {
         // p(t) = (1-t)^2*p0 + 2*t(1-t)*p1 + t^2*p2
