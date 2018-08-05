@@ -7,14 +7,17 @@ use tables::glyf::{Coordinate, SimpleCoordinates};
 
 type GrayDirectedImage = ImageBuffer<Luma<i16>, Vec<i16>>;
 
-pub struct Raster(pub GrayDirectedImage);
+pub struct Raster(pub GrayDirectedImage, u64);
 
 impl Raster {
     pub fn new(width: u32, height: u32) -> Raster {
-        Raster(GrayDirectedImage::from_pixel(width, height, Luma { data: [0] }))
+        Raster(
+            GrayDirectedImage::from_pixel(width, height, Luma { data: [0] }),
+            0
+        )
     }
 
-    pub fn into_gray_image(self) -> GrayImage {
+    pub fn into_gray_image(self) -> GrayImage  {
         use std::u8;
         use std::slice::Iter as SliceIter;
         use std::iter::{Map, Cloned};
@@ -24,18 +27,7 @@ impl Raster {
             Cloned<SliceIter<'a, i16>>,
             impl FnMut(i16) -> u8> {
             let mut count = 0;
-            let mut prev_pos = None;
             let apply_winding_rule = move |pix: i16| {
-                if let Some(prev_pos) = prev_pos.take() {
-                    if pix != 0 {
-                        let now_pos = pix > 0;
-                        if prev_pos != now_pos {
-                            println!("FOUND ADJACENT OPOSITE WINDINGS");
-                        }
-                    }
-                } else if pix != 0 {
-                    prev_pos = Some(pix > 0);
-                }
                 if pix > 0 {
                     count += 1;
                 } else if pix < 0 {
@@ -55,8 +47,31 @@ impl Raster {
             impl FnMut(i16) -> u8> {
             row.into_iter()
                 .cloned()
-                .map(|pix: i16| pix.abs().min(u8::MAX as i16) as u8)
+                // .map(|pix: i16| pix.abs().min(u8::MAX as i16) as u8)
+                .map(|pix: i16| {
+                    let pix = if pix > 0 {
+                        u8::MAX as i16
+                    } else if pix < 0 {
+                        u8::MAX as i16 / 2
+                    } else { 0 };
+                    pix as u8
+// pix.abs().min(u8::MAX as i16) as u8
+                })
         }
+
+        // let rgb_outline = |row| {
+        //     row.into_iter()
+        //         .cloned()
+        //         .map(|pix| {
+        //             if pix > 0 {
+        //                 &[u8::MAX, 0, 0]
+        //             } else if pix < 0 {
+        //                 &[0, u8::MAX, 0]
+        //             } else { &[0, 0, 0] }
+        //         })
+        //         .flatten()
+        //         .cloned()
+        // }
 
         let width = self.0.width();
         let height = self.0.height();
@@ -153,16 +168,17 @@ impl Raster {
         }
         // self.draw_point(start, 5);
         // self.draw_point(end, 5);
+        // let pix_val = Self::directioned_value(start, end);
         let pix_val = Self::directioned_value(start, end);
-        // draw_line_segment_mut(&mut self.0,
-        //                       (start.x as f32, start.y as f32),
-        //                       (end.x as f32, end.y as f32),
-        //                       Luma { data: [pix_val] });
-        draw_antialiased_line_segment_mut(&mut self.0,
-                                          (start.x as i32, start.y as i32),
-                                          (end.x as i32, end.y as i32),
-                                          Luma { data: [pix_val] },
-                                          interpolate_directed);
+        draw_line_segment_mut(&mut self.0,
+                              (start.x as f32, start.y as f32),
+                              (end.x as f32, end.y as f32),
+                              Luma { data: [pix_val] });
+        // draw_antialiased_line_segment_mut(&mut self.0,
+        //                                   (start.x as i32, start.y as i32),
+        //                                   (end.x as i32, end.y as i32),
+        //                                   Luma { data: [pix_val] },
+        //                                   interpolate_directed);
     }
     pub fn draw_curve(&mut self, start: Point, off_curve: Point, end: Point) {
         // p(t) = (1-t)^2*p0 + 2*t(1-t)*p1 + t^2*p2
