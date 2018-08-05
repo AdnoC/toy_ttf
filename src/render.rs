@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use image::{ImageBuffer, Luma, GrayImage};
-// use imageproc::drawing::draw_antialiased_line_segment_mut;
+use imageproc::drawing::draw_antialiased_line_segment_mut; // TODO: Pick ONE draw_line func
 use imageproc::drawing::draw_line_segment_mut;
 use math::Point;
 use tables::glyf::{Coordinate, SimpleCoordinates};
@@ -15,28 +15,55 @@ impl Raster {
     }
 
     pub fn into_gray_image(self) -> GrayImage {
+        use std::u8;
+        use std::slice::Iter as SliceIter;
+        use std::iter::{Map, Cloned};
+
+        #[allow(dead_code)]
+        fn fill_in<'a>(row: SliceIter<'a, i16>) -> Map<
+            Cloned<SliceIter<'a, i16>>,
+            impl FnMut(i16) -> u8> {
+            let mut count = 0;
+            let mut prev_pos = None;
+            let apply_winding_rule = move |pix: i16| {
+                if let Some(prev_pos) = prev_pos.take() {
+                    if pix != 0 {
+                        let now_pos = pix > 0;
+                        if prev_pos != now_pos {
+                            println!("FOUND ADJACENT OPOSITE WINDINGS");
+                        }
+                    }
+                } else if pix != 0 {
+                    prev_pos = Some(pix > 0);
+                }
+                if pix > 0 {
+                    count += 1;
+                } else if pix < 0 {
+                    count -= 1;
+                }
+                if count != 0 {
+                    u8::MAX
+                } else {
+                    0
+                }
+            };
+            row.into_iter().cloned().map(apply_winding_rule)
+        }
+        #[allow(dead_code)]
+        fn just_outline<'a>(row: SliceIter<'a, i16>) -> Map<
+            Cloned<SliceIter<'a, i16>>,
+            impl FnMut(i16) -> u8> {
+            row.into_iter()
+                .cloned()
+                .map(|pix: i16| pix.abs().min(u8::MAX as i16) as u8)
+        }
+
         let width = self.0.width();
         let height = self.0.height();
         let data: Vec<u8> = self.0.into_vec()
             .chunks(width as usize)
-            .map(|row| {
-                use std::u8;
-
-                let mut count = 0;
-                let apply_winding_rule = move |&pix: &i16| {
-                    if pix > 0 {
-                        count += 1;
-                    } else if pix < 0 {
-                        count -= 1;
-                    }
-                    if count != 0 {
-                        u8::MAX
-                    } else {
-                        0
-                    }
-                };
-                row.into_iter().map(apply_winding_rule)
-            })
+            .into_iter()
+            .map(|row| fill_in(row.into_iter()))
             .flatten()
             .collect();
         GrayImage::from_vec(width, height, data).expect("Couldn't re-create GrayImage")
@@ -127,15 +154,15 @@ impl Raster {
         // self.draw_point(start, 5);
         // self.draw_point(end, 5);
         let pix_val = Self::directioned_value(start, end);
-        draw_line_segment_mut(&mut self.0,
-                              (start.x as f32, start.y as f32),
-                              (end.x as f32, end.y as f32),
-                              Luma { data: [pix_val] });
-        // draw_antialiased_line_segment_mut(&mut self.0,
-        //                                   (start.x as i32, start.y as i32),
-        //                                   (end.x as i32, end.y as i32),
-        //                                   Luma { data: [pix_val] },
-        //                                   interpolate_directed);
+        // draw_line_segment_mut(&mut self.0,
+        //                       (start.x as f32, start.y as f32),
+        //                       (end.x as f32, end.y as f32),
+        //                       Luma { data: [pix_val] });
+        draw_antialiased_line_segment_mut(&mut self.0,
+                                          (start.x as i32, start.y as i32),
+                                          (end.x as i32, end.y as i32),
+                                          Luma { data: [pix_val] },
+                                          interpolate_directed);
     }
     pub fn draw_curve(&mut self, start: Point, off_curve: Point, end: Point) {
         // p(t) = (1-t)^2*p0 + 2*t(1-t)*p1 + t^2*p2
