@@ -181,31 +181,64 @@ impl Raster {
         //                                   interpolate_directed);
     }
     pub fn draw_curve(&mut self, start: Point, off_curve: Point, end: Point) {
-        // p(t) = (1-t)^2*p0 + 2*t(1-t)*p1 + t^2*p2
+        for (a, b) in CurveLines::new(start, off_curve, end) {
+            self.draw_line(a, b);
+        }
+    }
+}
 
+pub struct CurveLines {
+    start: Point,
+    off_curve: Point,
+    end: Point,
+    prev: Point,
+    num_points: f32,
+    i: f32
+}
+impl CurveLines {
+    fn new(start: Point, off_curve: Point, end: Point) -> CurveLines {
         let dist1 = start.distance_to(off_curve);
         let dist2 = end.distance_to(off_curve);
-        let interp_points = dist1 + dist2 + 2.;
+        let num_points = dist1 + dist2 + 2.;
 
-
-        let mut prev = start;
-        for i in 1..(interp_points.ceil() as i32 - 1) {
-            let t = interp_points.recip() * i as f32;
-
-            let p1 = start.lerp_to(off_curve, t);
-            let p2 = off_curve.lerp_to(end, t);
-            let p = p1.lerp_to(p2, t);
-            // let p1 = start * (1. - t) * (1. - t);
-            // let p2 = off_curve * 2. * t * (1. - t);
-            // let p3 = end * t * t;
-            // let p = p1 + p2 + p3;
-
-            self.draw_line(prev, p);
-            prev = p;
+        CurveLines {
+            start,
+            off_curve,
+            end,
+            prev: start,
+            num_points,
+            i: 0.,
         }
-        self.draw_line(prev, end);
+    }
+}
 
-        // unimplemented!()
+impl Iterator for CurveLines {
+    type Item = (Point, Point);
+    fn next(&mut self) -> Option<Self::Item> {
+        // p(t) = (1-t)^2*p0 + 2*t(1-t)*p1 + t^2*p2
+        if self.i >= self.num_points {
+            return None;
+        }
+        self.i += 1.;
+
+        if self.i == self.num_points {
+            return Some((self.prev, self.end));
+        }
+
+
+        let t = self.num_points.recip() * self.i;
+
+        let p1 = self.start.lerp_to(self.off_curve, t);
+        let p2 = self.off_curve.lerp_to(self.end, t);
+        let p = p1.lerp_to(p2, t);
+        // let p1 = start * (1. - t) * (1. - t);
+        // let p2 = off_curve * 2. * t * (1. - t);
+        // let p3 = end * t * t;
+        // let p = p1 + p2 + p3;
+
+        let segment = (self.prev, p);
+        self.prev = p;
+        Some(segment)
     }
 }
 
