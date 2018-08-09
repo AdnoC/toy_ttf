@@ -133,14 +133,7 @@ pub struct Matrix<T> {
 impl<T: Copy + Default> Matrix<T> {
     // Why does `usize` not impl `From<u32`?
     pub fn new(width: u32, height: u32) -> Matrix<T> {
-        let width = width as usize;
-        let height = height as usize;
-        let data: Vec<T> = vec![Default::default(); width * height];
-        Matrix {
-            data,
-            width,
-            height,
-        }
+        Self::with_value(Default::default(), width, height)
     }
 
     pub fn with_value(val: T, width: u32, height: u32) -> Matrix<T> {
