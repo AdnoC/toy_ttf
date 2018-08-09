@@ -1,4 +1,4 @@
-use std::ops::{Add, Mul};
+use std::ops::{Add, Mul, Index, IndexMut};
 use std::convert::From;
 
 #[derive(Debug, PartialEq, PartialOrd, Clone, Copy)]
@@ -121,5 +121,57 @@ impl Mul for Affine {
                    + self.translation[1]
             ]
         }
+    }
+}
+
+pub struct Matrix<T> {
+    data: Vec<T>,
+    width: usize,
+    height: usize,
+}
+
+impl<T: Copy + Default> Matrix<T> {
+    // Why does `usize` not impl `From<u32`?
+    pub fn new(width: u32, height: u32) -> Matrix<T> {
+        let width = width as usize;
+        let height = height as usize;
+        let data: Vec<T> = vec![Default::default(); width * height];
+        Matrix {
+            data,
+            width,
+            height,
+        }
+    }
+
+    pub fn with_value(val: T, width: u32, height: u32) -> Matrix<T> {
+        let width = width as usize;
+        let height = height as usize;
+        let data: Vec<T> = vec![val; width * height];
+        Matrix {
+            data,
+            width,
+            height,
+        }
+    }
+}
+
+impl<T> Index<(usize, usize)> for Matrix<T> {
+    type Output = T;
+
+    fn index(&self, (x, y): (usize, usize)) -> &Self::Output {
+        &self.data[x + y * self.width]
+    }
+}
+impl<T> IndexMut<(usize, usize)> for Matrix<T> {
+    fn index_mut<'a>(&'a mut self, (x, y): (usize, usize)) -> &'a mut Self::Output {
+        &mut self.data[x + y * self.width]
+    }
+}
+
+pub struct LineSegment(Point, Point);
+
+impl From<(Point, Point)> for LineSegment {
+    fn from((start, end): (Point, Point)) -> Self {
+        LineSegment(start, end)
     }
 }

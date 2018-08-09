@@ -2,7 +2,7 @@ use itertools::Itertools;
 use image::{ImageBuffer, Luma, GrayImage, DynamicImage, RgbImage};
 use imageproc::drawing::draw_antialiased_line_segment_mut; // TODO: Pick ONE draw_line func
 use imageproc::drawing::draw_line_segment_mut;
-use math::Point;
+use math::{LineSegment, Matrix, Point};
 use tables::glyf::{Coordinate, SimpleCoordinates};
 
 type GrayDirectedImage = ImageBuffer<Luma<i16>, Vec<i16>>;
@@ -12,6 +12,29 @@ pub trait Raster {
     fn add_line(&mut self, start: Point, end: Point);
     fn into_dynamic(self) -> DynamicImage;
 }
+
+pub struct FillInRaster {
+    windings: Matrix<usize>,
+    lines: Vec<LineSegment>,
+}
+
+impl Raster for FillInRaster {
+    fn new(width: u32, height: u32) -> Self {
+        FillInRaster {
+            windings: Matrix::new(width, height),
+            lines: Vec::new(),
+        }
+    }
+
+    fn add_line(&mut self, start: Point, end: Point) {
+        self.lines.push((start, end).into());
+    }
+
+    fn into_dynamic(self) -> DynamicImage {
+        unimplemented!()
+    }
+}
+
 
 pub struct OutlineRaster(pub GrayImage);
 impl Raster for OutlineRaster {

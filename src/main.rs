@@ -110,7 +110,7 @@ fn draw_glyph<'a>(font: &Font<'a>, glyph: Glyph<'a>) {
     let affine = Affine::translation(x_shift, y_shift);
 
     println!("Raster (w, h) = ({}, {})", width as u32 + PADDING, height as u32 + PADDING);
-    let mut raster = BadFilledRaster::new(width as u32 + PADDING, height as u32 + PADDING);
+    let mut raster = FillInRaster::new(width as u32 + PADDING, height as u32 + PADDING);
     // let mut raster = OutlineRaster::new(width as u32 + PADDING, height as u32 + PADDING);
 
     render_glyph(font, &mut raster, affine, glyph);
