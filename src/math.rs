@@ -125,9 +125,9 @@ impl Mul for Affine {
 }
 
 pub struct Matrix<T> {
-    data: Vec<T>,
-    width: usize,
-    height: usize,
+    pub data: Vec<T>,
+    pub width: usize,
+    pub height: usize,
 }
 
 impl<T: Copy + Default> Matrix<T> {

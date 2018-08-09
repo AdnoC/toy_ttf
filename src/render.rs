@@ -14,7 +14,7 @@ pub trait Raster {
 }
 
 pub struct FillInRaster {
-    windings: Matrix<usize>,
+    windings: Matrix<isize>,
     lines: Vec<LineSegment>,
 }
 
@@ -27,11 +27,38 @@ impl Raster for FillInRaster {
     }
 
     fn add_line(&mut self, start: Point, end: Point) {
-        self.lines.push((start, end).into());
+        // Horizontal lines screw up intersection finding code
+        if start.y != end.y {
+            self.lines.push((start, end).into());
+        }
     }
 
-    fn into_dynamic(self) -> DynamicImage {
-        unimplemented!()
+    fn into_dynamic(mut self) -> DynamicImage {
+        use std::u8;
+
+        for (y, row) in self.windings.data.chunks_mut(self.windings.width).enumerate() {
+            let y = y as f32;
+            for line in self.lines.iter() {
+                if let Some(x) = line.horiz_line_intersects(y) {
+                    let wind_val = line.winding_value() as isize;
+                    let x = x.round() as usize;
+                    for winding in &mut row[0..x] {
+                        *winding += wind_val;
+                    }
+                }
+            }
+        }
+
+        let img_data = self.windings.data.into_iter()
+            .map(|wind_val| wind_val.abs().min(1))
+            .map(|pix_on| pix_on as u8 * u8::MAX)
+            .collect();
+
+        let img = GrayImage::from_vec(self.windings.width as u32,
+                                      self.windings.height as u32,
+                                      img_data)
+            .expect("Couldn't re-create GrayImage");
+        DynamicImage::ImageLuma8(img)
     }
 }
 
