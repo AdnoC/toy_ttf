@@ -36,6 +36,7 @@ impl Raster for FillInRaster {
     fn into_dynamic(mut self) -> DynamicImage {
         use std::u8;
 
+        // Just asking to be parallellized
         for (y, row) in self.windings.data.chunks_mut(self.windings.width).enumerate() {
             let y = y as f32;
             for line in self.lines.iter() {
@@ -45,6 +46,51 @@ impl Raster for FillInRaster {
                     for winding in &mut row[0..x] {
                         *winding += wind_val;
                     }
+                }
+            }
+        }
+
+        { //DBG
+            fn print_intersections(y: usize, lines: &Vec<LineSegment>, indent: usize) {
+                let mut ind_str = String::new();
+                for _ in 0..indent {
+                    ind_str.push('\t');
+                }
+                println!("{}IX for y = {}", ind_str, y);
+                ind_str.push('\t');
+
+                let mut wind_val = 0;
+                let mut found_ix = false;
+                let y = y as f32;
+                for line in lines.iter() {
+                    let ix = line.horiz_line_intersects(y);
+
+                    if let Some(x) = ix {
+                        found_ix = true;
+                        let wr = line.winding_value();
+                        if x > 5. {
+                            wind_val += wr;
+                        }
+                        println!("{}ix = {:?} ({}), {:?}", ind_str, x, wr, line);
+                    }
+                }
+                if !found_ix {
+                    println!("{}Couldn't find ix", ind_str);
+                }
+                println!("{}Wind_val = {}", ind_str, wind_val);
+            }
+            for (y, row) in self.windings.data.chunks(self.windings.width).enumerate() {
+                if row[5] == 0 {
+                    println!("5th pixel on y = {} is off", y);
+
+                    print_intersections(y, &self.lines, 0);
+                    if y > 0 {
+                        print_intersections(y - 1, &self.lines, 1);
+                    }
+                    if y < self.windings.height - 1 {
+                        print_intersections(y + 1, &self.lines, 1);
+                    }
+
                 }
             }
         }
@@ -383,9 +429,9 @@ impl Iterator for CurveLines {
         let p1 = self.start.lerp_to(self.off_curve, t);
         let p2 = self.off_curve.lerp_to(self.end, t);
         let p = p1.lerp_to(p2, t);
-        // let p1 = start * (1. - t) * (1. - t);
-        // let p2 = off_curve * 2. * t * (1. - t);
-        // let p3 = end * t * t;
+        // let p1 = self.start * (1. - t) * (1. - t);
+        // let p2 = self.off_curve * 2. * t * (1. - t);
+        // let p3 = self.end * t * t;
         // let p = p1 + p2 + p3;
 
         let segment = (self.prev, p);

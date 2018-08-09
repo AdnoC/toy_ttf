@@ -168,6 +168,7 @@ impl<T> IndexMut<(usize, usize)> for Matrix<T> {
     }
 }
 
+#[derive(Debug)]
 pub struct LineSegment(Point, Point);
 
 impl From<(Point, Point)> for LineSegment {
