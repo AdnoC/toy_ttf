@@ -175,3 +175,81 @@ impl From<(Point, Point)> for LineSegment {
         LineSegment(start, end)
     }
 }
+
+impl LineSegment {
+    /// Calculate the intersection with the horizontal line `f(x) = y`.
+    ///
+    /// Returns `None` if no intersection exists.
+    ///
+    /// If an intersection exists returns the x-coordinate of the intersection
+    pub fn horiz_line_intersects(&self, y: f32) -> Option<f32> {
+        // Reorder so that the line goes upward
+        let (start, end) = if self.0.y < self.1.y {
+            (self.0, self.1)
+        } else {
+            (self.1, self.0)
+        };
+
+        // Short circuit on the answer existing
+        if y < start.y || y > end.y {
+            return None;
+        }
+
+        // y = m*(x - x1) + y1
+        // (y - y1)/m + x1 = x;
+
+        let slope = (end.y - start.y) / (end.x - start.x);
+        let x = (y - start.y) / slope + start.x;
+
+        Some(x)
+    }
+
+    /// Returns the winding rule value for this line segment.
+    ///
+    /// Positive if count should be incremented, negative if it should be
+    /// decremented.
+    ///
+    /// Assuming rays travel along the positive x-axis
+    ///
+    /// From
+    /// https://developer.apple.com/fonts/TrueType-Reference-Manual/RM02/Chap2.html#distinguishing
+    ///
+    /// Add one to the count each time a glyph contour crosses the ray from right
+    /// to left or bottom to top. (Such a crossing is termed an on-transition
+    /// because the TrueType scan converter scans from left to right and bottom to top.)
+    ///
+    /// Subtract one from the count each time a contour of the glyph crosses the
+    /// ray from left to right or top to bottom. (Such a crossing is termed an
+    /// off-transition.)
+    pub fn winding_value(&self) -> i8 {
+        if self.0.y == self.1.y {
+            // Right -> Left
+            if self.0.x > self.1.x {
+                1
+            // Left -> Right
+            } else {
+                -1
+            }
+        // Top -> Bottom
+        } else if self.0.y > self.1.y {
+            -1
+        // Bottom -> Top
+        } else {
+            1
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn line_segment_horiz_line_intersect() {
+        let ls: LineSegment = ((-1., -1.).into(),(1., 1.).into()).into();
+
+        assert_eq!(ls.horiz_line_intersects(0.), Some(0.));
+        assert_eq!(ls.horiz_line_intersects(1.), Some(1.));
+        assert_eq!(ls.horiz_line_intersects(-1.), Some(-1.));
+    }
+}
