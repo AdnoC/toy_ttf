@@ -43,7 +43,7 @@ impl Raster for FillInRaster {
                 if let Some(x) = line.horiz_line_intersects(y) {
                     let wind_val = line.winding_value() as isize;
                     let x = x.round() as usize;
-                    for winding in &mut row[0..x] {
+                    for winding in &mut row[x..] {
                         *winding += wind_val;
                     }
                 }
