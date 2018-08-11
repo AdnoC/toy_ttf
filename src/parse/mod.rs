@@ -4,6 +4,7 @@ pub mod primitives;
 pub(crate) mod font_directory;
 
 use std::fmt;
+use std::cmp::Ordering;
 
 pub trait Parse<'a> {
     /// Size of the object when serialized in the file
@@ -71,6 +72,26 @@ impl<'a, T: Parse<'a>> DynArr<'a, T> {
         let sized_idx = idx * T::approx_file_size();
         let (before, after) = self.0.split_at(sized_idx);
         (DynArr(before, PhantomData), DynArr(after, PhantomData))
+    }
+    pub fn binary_search_by<F>(&self, mut f: F) -> Option<T>
+        where F: FnMut(&T) -> Ordering {
+        // Adapted from rust std's slice binary_search_by function
+        let mut size = self.len();
+        if size == 0 {
+            return None;
+        }
+        let mut left = 0;
+        while size > 1 {
+            let half = size / 2;
+            let mid = left + half;
+            let cmp = f(&self.at(mid));
+            left = if cmp == Ordering::Greater { left } else { mid };
+            size -= half;
+        }
+
+        let found_item = self.at(left);
+        let cmp = f(&found_item);
+        if cmp == Ordering::Equal { Some(found_item) } else { None }
     }
 }
 impl<'a, T: Parse<'a>> Parse<'a> for DynArr<'a, T> {
