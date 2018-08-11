@@ -185,7 +185,7 @@ impl LineSegment {
         };
 
         // Short circuit on the answer existing
-        if y < start.y || y > end.y {
+        if y < start.y || y >= end.y {
             return None;
         }
 
