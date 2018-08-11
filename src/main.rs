@@ -21,7 +21,7 @@ fn main() {
     use toy_ttf::tables::loca::Loca;
     use toy_ttf::tables::glyf::Glyf;
     // let font_buf = load_file(ROBOTO);
-    let font_buf = load_file(SANS_MONO);
+    let font_buf = load_file(SERIF);
     // toy_ttf::parse::load_font(&font_buf);
 
     let font = Font::from_buffer(&font_buf).unwrap();
@@ -30,7 +30,6 @@ fn main() {
     // let glyph = font.get_glyph('✌').unwrap();
     let glyph = font.get_glyph('𝕚').unwrap(); // Codepoint: 0x1d55a
     draw_glyph(&font, glyph);
-
 }
 
 fn render_glyph<'a>(font: &Font<'a>, raster: &mut impl Raster, affine: Affine, glyph: Glyph<'a>) {

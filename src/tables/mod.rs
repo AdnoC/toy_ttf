@@ -143,4 +143,7 @@ pub enum TableTag {
     EBDT = u32_code!(b"EBDT"),
     EBLC = u32_code!(b"EBLC"),
     EmbeddedBitmapScalingControl = u32_code!(b"EBSC"),
+
+    // Who knows what
+    MATH = u32_code!(b"MATH"),
 }
