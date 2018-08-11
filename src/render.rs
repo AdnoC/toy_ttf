@@ -390,14 +390,15 @@ pub struct CurveLines {
     off_curve: Point,
     end: Point,
     prev: Point,
-    num_points: f32,
-    i: f32
+    num_points: u32,
+    i: u32
 }
 impl CurveLines {
-    fn new(start: Point, off_curve: Point, end: Point) -> CurveLines {
+    pub fn new(start: Point, off_curve: Point, end: Point) -> CurveLines {
         let dist1 = start.distance_to(off_curve);
         let dist2 = end.distance_to(off_curve);
         let num_points = dist1 + dist2 + 2.;
+        let num_points = num_points.floor() as u32;
 
         CurveLines {
             start,
@@ -405,7 +406,7 @@ impl CurveLines {
             end,
             prev: start,
             num_points,
-            i: 0.,
+            i: 0,
         }
     }
 }
@@ -417,14 +418,14 @@ impl Iterator for CurveLines {
         if self.i >= self.num_points {
             return None;
         }
-        self.i += 1.;
+        self.i += 1;
 
         if self.i == self.num_points {
             return Some((self.prev, self.end));
         }
 
 
-        let t = self.num_points.recip() * self.i;
+        let t = (self.num_points as f32).recip() * self.i as f32;
 
         let p1 = self.start.lerp_to(self.off_curve, t);
         let p2 = self.off_curve.lerp_to(self.end, t);
