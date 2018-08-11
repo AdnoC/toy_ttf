@@ -38,7 +38,7 @@ impl Raster for FillInRaster {
 
         // Just asking to be parallellized
         for (y, row) in self.windings.data.chunks_mut(self.windings.width).enumerate() {
-            let y = y as f32;
+            let y = y as f32 + 0.5; // Scanline is at center of a pixel
             for line in self.lines.iter() {
                 if let Some(x) = line.horiz_line_intersects(y) {
                     let wind_val = line.winding_value() as isize;
@@ -61,7 +61,7 @@ impl Raster for FillInRaster {
 
                 let mut wind_val = 0;
                 let mut found_ix = false;
-                let y = y as f32;
+                let y = y as f32 + 0.5;
                 for line in lines.iter() {
                     let ix = line.horiz_line_intersects(y);
 
