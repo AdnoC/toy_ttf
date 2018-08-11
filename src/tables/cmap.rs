@@ -25,6 +25,13 @@ impl<'a> CMap<'a> {
             _marker: PhantomData,
         }
     }
+    pub fn get_format<T: CMapFormatTable<'a>>(&self) -> Option<T> {
+        self.encoding_records()
+            .map(|record| record.offset as usize)
+            .map(|offset| &self.table.0[offset..])
+            .find(|fmt_table| fmt_table_has_format(fmt_table, T::format_identifier()))
+            .map(|fmt_table| T::parse(fmt_table).1)
+    }
     // fn formats(&self) ->
     pub fn format4(&self) -> Option<Format4<'a>> {
         self.encoding_records()
@@ -33,6 +40,10 @@ impl<'a> CMap<'a> {
             .find(|fmt_table| fmt_table_has_format(fmt_table, 4))
             .map(|fmt_table| Format4::parse(fmt_table).1)
     }
+}
+
+pub trait CMapFormatTable<'a>: Parse<'a> {
+    fn format_identifier() -> u16;
 }
 
 #[derive(Debug, Parse, PartialEq)]
@@ -52,10 +63,10 @@ enum CMapMappings<'a> {
     // Format2(Format2),
     Format4(Format4<'a>),
     // Format6(Format6),
-    // Format8_0(Format8_0),
-    // Format10_0(Format10_0),
-    // Format12_0(Format12_0),
-    // Format13_0(Format13_0),
+    // Format8(Format8),
+    // Format10(Format10),
+    Format12(Format12<'a>),
+    // Format13(Format13),
     // Format14(Format14A,)
 }
 
@@ -63,6 +74,7 @@ fn halve_u16(val: u16) -> u16 {
     val / 2
 }
 
+/// Standard on Windows for Unicode BMP characters
 #[derive(Debug, Parse)]
 pub struct Format4<'a> {
     format: u16, // = 4
@@ -126,6 +138,33 @@ impl<'a> Format4<'a> {
         }
         None
     }
+}
+
+impl<'a> CMapFormatTable<'a> for Format4<'a> {
+    fn format_identifier() -> u16 { 4 }
+}
+
+/// Standard on Windows for Unicode supplementary-plane characters
+#[derive(Debug, Parse)]
+pub struct Format12<'a> {
+    format: u16, // = 12
+    reserved: u16, // = 0
+    length: u32,
+    language: u32,
+    #[len_src]
+    num_groups: u32,
+    #[arr_len_src = "num_groups"]
+    groups: DynArr<'a, SequentialMapGroup>,
+}
+impl<'a> CMapFormatTable<'a> for Format12<'a> {
+    fn format_identifier() -> u16 { 12 }
+}
+
+#[derive(Debug, Parse)]
+struct SequentialMapGroup {
+    start_char_code: u32,
+    end_char_code: u32,
+    start_glyph_id: u32,
 }
 
 #[cfg(test)]
