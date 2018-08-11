@@ -50,51 +50,6 @@ impl Raster for FillInRaster {
             }
         }
 
-        { //DBG
-            fn print_intersections(y: usize, lines: &Vec<LineSegment>, indent: usize) {
-                let mut ind_str = String::new();
-                for _ in 0..indent {
-                    ind_str.push('\t');
-                }
-                println!("{}IX for y = {}", ind_str, y);
-                ind_str.push('\t');
-
-                let mut wind_val = 0;
-                let mut found_ix = false;
-                let y = y as f32 + 0.5;
-                for line in lines.iter() {
-                    let ix = line.horiz_line_intersects(y);
-
-                    if let Some(x) = ix {
-                        found_ix = true;
-                        let wr = line.winding_value();
-                        if x > 5. {
-                            wind_val += wr;
-                        }
-                        println!("{}ix = {:?} ({}), {:?}", ind_str, x, wr, line);
-                    }
-                }
-                if !found_ix {
-                    println!("{}Couldn't find ix", ind_str);
-                }
-                println!("{}Wind_val = {}", ind_str, wind_val);
-            }
-            for (y, row) in self.windings.data.chunks(self.windings.width).enumerate() {
-                if row[5] == 0 {
-                    println!("5th pixel on y = {} is off", y);
-
-                    print_intersections(y, &self.lines, 0);
-                    if y > 0 {
-                        print_intersections(y - 1, &self.lines, 1);
-                    }
-                    if y < self.windings.height - 1 {
-                        print_intersections(y + 1, &self.lines, 1);
-                    }
-
-                }
-            }
-        }
-
         let img_data = self.windings.data.into_iter()
             .map(|wind_val| wind_val.abs().min(1))
             .map(|pix_on| pix_on as u8 * u8::MAX)

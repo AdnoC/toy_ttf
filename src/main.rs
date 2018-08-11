@@ -25,7 +25,7 @@ fn main() {
     // toy_ttf::parse::load_font(&font_buf);
 
     let font = Font::from_buffer(&font_buf).unwrap();
-    let glyph = font.get_glyph('B').unwrap(); // Codepoint is 188
+    let glyph = font.get_glyph('S').unwrap(); // Codepoint is 188
     // let glyph = font.get_glyph('¼').unwrap(); // Codepoint is 188
     draw_glyph(&font, glyph);
 
@@ -57,7 +57,7 @@ fn render_glyph<'a>(font: &Font<'a>, raster: &mut impl Raster, affine: Affine, g
             // }
             for contour in glyph.contours() {
                 for (start, end) in FlattenedDrawCommands::from_coordinates(contour.into_iter()) {
-                    println!("({:?}, {:?})", affine*start, affine*end);
+                    // println!("({:?}, {:?})", affine*start, affine*end);
                     raster.add_line(affine * start, affine * end);
                 }
             }
