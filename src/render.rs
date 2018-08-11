@@ -35,6 +35,7 @@ impl Raster for FillInRaster {
 
     fn into_dynamic(mut self) -> DynamicImage {
         use std::u8;
+        // TODO: Handle dropouts
 
         // Just asking to be parallellized
         for (y, row) in self.windings.data.chunks_mut(self.windings.width).enumerate() {

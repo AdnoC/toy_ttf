@@ -25,8 +25,10 @@ fn main() {
     // toy_ttf::parse::load_font(&font_buf);
 
     let font = Font::from_buffer(&font_buf).unwrap();
-    let glyph = font.get_glyph('S').unwrap(); // Codepoint is 188
-    // let glyph = font.get_glyph('¼').unwrap(); // Codepoint is 188
+    // let glyph = font.get_glyph('S').unwrap();
+    // let glyph = font.get_glyph('¼').unwrap();
+    // let glyph = font.get_glyph('✌').unwrap();
+    let glyph = font.get_glyph('𝕚').unwrap();
     draw_glyph(&font, glyph);
 
 }
