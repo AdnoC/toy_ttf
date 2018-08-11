@@ -619,4 +619,26 @@ mod tests {
             assert_eq!(actual, expected);
         }
     }
+
+    #[test]
+    fn curve_iterator() {
+        let expecteds = &[
+            (Point { x: 0.0, y: 0.0 }, Point { x: 0.0625, y: 0.5 }),
+            (Point { x: 0.0625, y: 0.5 }, Point { x: 0.25, y: 1.0 }),
+            (Point { x: 0.25, y: 1.0 }, Point { x: 0.5625, y: 1.5 }),
+            (Point { x: 0.5625, y: 1.5 }, Point { x: 1.0, y: 2.0 }),
+            (Point { x: 1.0, y: 2.0 }, Point { x: 1.5625, y: 2.5 }),
+            (Point { x: 1.5625, y: 2.5 }, Point { x: 2.25, y: 3.0 }),
+            (Point { x: 2.25, y: 3.0 }, Point { x: 3.0625, y: 3.5 }),
+            (Point { x: 3.0625, y: 3.5 }, Point { x: 4.0, y: 4.0 }),
+        ];
+        let p1 = (0., 0.).into();
+        let p2 = (4., 4.).into();
+        let off = (0., 2.).into();
+
+        let curve = CurveLines::new(p1, off, p2);
+        for (actual, &expected) in curve.zip(expecteds) {
+            assert_eq!(actual, expected);
+        }
+    }
 }
