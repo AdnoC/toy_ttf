@@ -28,7 +28,7 @@ fn main() {
     // let glyph = font.get_glyph('S').unwrap();
     // let glyph = font.get_glyph('¼').unwrap();
     // let glyph = font.get_glyph('✌').unwrap();
-    let glyph = font.get_glyph('𝕚').unwrap();
+    let glyph = font.get_glyph('𝕚').unwrap(); // Codepoint: 0x1d55a
     draw_glyph(&font, glyph);
 
 }

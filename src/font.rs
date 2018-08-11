@@ -39,11 +39,10 @@ impl<'a> Font<'a> {
 
         let glyph_id = if (code_point as u32) < (u16::MAX as u32) {
             let format4: Format4 = cmap.get_format()?;
-            format4.lookup_glyph_id(code_point as u32 as u16)?
+            format4.lookup_glyph_id(code_point as u32 as u16)? as u32
         } else {
-            unimplemented!()
-            // let format12: Format12 = cmap.get_format()?;
-            // format12.lookup_glyph_id(code_point as u32 as u16)?;
+            let format12: Format12 = cmap.get_format()?;
+            format12.lookup_glyph_id(code_point as u32)?
         };
         let glyph_offset = loca.at(glyph_id as usize);
         glyf.at_offset(glyph_offset as usize)
