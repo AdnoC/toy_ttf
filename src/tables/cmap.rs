@@ -1,6 +1,7 @@
 use parse::{BufView, DynArr, Parse};
 use tables::RecordIterator;
 use tables::{PrimaryTable, TableTag};
+use std::cmp::{PartialEq, PartialOrd, Ordering};
 
 #[derive(Debug, Parse)]
 pub struct CMap<'a> {
@@ -153,6 +154,7 @@ pub struct Format12<'a> {
     language: u32,
     #[len_src]
     num_groups: u32,
+    // Sorted by increasing `start_char_code`
     #[arr_len_src = "num_groups"]
     groups: DynArr<'a, SequentialMapGroup>,
 }
@@ -160,11 +162,56 @@ impl<'a> CMapFormatTable<'a> for Format12<'a> {
     fn format_identifier() -> u16 { 12 }
 }
 
+impl<'a> Format12<'a> {
+    pub fn lookup_glyph_id(&self, code_point: u32) -> Option<u32> {
+        let group = self.groups
+            .binary_search_by(|group| group.partial_cmp(&code_point).unwrap())?;
+        group.lookup_glyph_id(code_point)
+    }
+}
+
 #[derive(Debug, Parse)]
 struct SequentialMapGroup {
+    /// Inclusive
     start_char_code: u32,
+    /// Inclusive
     end_char_code: u32,
+    /// "Glyph index corresponding to the starting character code;
+    /// subsequent charcters are mapped to sequential glyphs"
+    /// (Apple CMap table docs)
     start_glyph_id: u32,
+}
+
+impl SequentialMapGroup {
+    pub fn lookup_glyph_id(&self, code_point: u32) -> Option<u32> {
+        if code_point < self.start_char_code || self.end_char_code < code_point {
+            return None;
+        }
+
+        let delta_cp = code_point - self.start_char_code;
+        let glyph_id = self.start_glyph_id + delta_cp;
+        Some(glyph_id)
+    }
+}
+
+impl PartialEq<u32> for SequentialMapGroup {
+    fn eq(&self, code_point: &u32) -> bool {
+        let code_point = *code_point;
+        self.start_char_code <= code_point && code_point <= self.end_char_code
+    }
+}
+impl PartialOrd<u32> for SequentialMapGroup {
+    fn partial_cmp(&self, code_point: &u32) -> Option<Ordering> {
+        use std::cmp::Ordering::*;
+        let code_point = *code_point;
+        if code_point < self.start_char_code {
+            Some(Greater)
+        } else if self.end_char_code < code_point {
+            Some(Less)
+        } else {
+            Some(Equal)
+        }
+    }
 }
 
 #[cfg(test)]
