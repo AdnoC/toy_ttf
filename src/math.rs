@@ -189,11 +189,12 @@ impl LineSegment {
             return None;
         }
 
-        // y = m*(x - x1) + y1
-        // (y - y1)/m + x1 = x;
+        // y = (dy/dx)*(x - x1) + y1
+        // (y - y1)/(dy/dx) + x1 = x;
+        // (y - y1)*(dx/dy) + x1 = x;
 
-        let slope = (end.y - start.y) / (end.x - start.x);
-        let x = (y - start.y) / slope + start.x;
+        let dxdy = (end.x - start.x) / (end.y - start.y);
+        let x = (y - start.y) * dxdy + start.x;
 
         Some(x)
     }
