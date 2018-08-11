@@ -88,7 +88,7 @@ pub enum TableTag {
     BitmapData = u32_code!(b"bdat"),
     BitmapFontHeader = u32_code!(b"bhed"),
     BitmapLocation = u32_code!(b"bloc"),
-    Baseline = u32_code!(b"bsln"),
+    AATBaseline = u32_code!(b"bsln"),
     CVTVariation = u32_code!(b"cvar"),
     FontDescriptor = u32_code!(b"fdsc"),
     LayoutFeature = u32_code!(b"feat"),
@@ -96,7 +96,7 @@ pub enum TableTag {
     FontFamilyCompat = u32_code!(b"fond"),
     FontVariation = u32_code!(b"fvar"),
     GlyphVariation = u32_code!(b"gvar"),
-    Justification = u32_code!(b"just"),
+    AATJustification = u32_code!(b"just"),
     ExtendedKerning = u32_code!(b"kerx"),
     LigatureCaret = u32_code!(b"lcar"),
     LanguageTag = u32_code!(b"ltag"),
@@ -111,11 +111,11 @@ pub enum TableTag {
     GlyphReference = u32_code!(b"Zapf"),
 
     // OpenType
-    GSUB = u32_code!(b"GSUB"),
-    GPOS = u32_code!(b"GPOS"),
-    GDEF = u32_code!(b"GDEF"),
-    BASE = u32_code!(b"BASE"),
-    JSFT = u32_code!(b"JSTF"),
+    GlyphSubstitution = u32_code!(b"GSUB"),
+    GlyphPositioning = u32_code!(b"GPOS"),
+    GlyphDefinition = u32_code!(b"GDEF"),
+    Baseline = u32_code!(b"BASE"),
+    Justification = u32_code!(b"JSTF"),
 
     // Graphite
     Silf = u32_code!(b"Silf"),
@@ -138,7 +138,8 @@ pub enum TableTag {
     ControlValueProgram = u32_code!(b"prep"),
     FontProgram = u32_code!(b"fpgm"),
     ControlValue = u32_code!(b"cvt "), // Tags less than 4 chars have trailing spaces
-    CFF = u32_code!(b"CFF "),
+    CompactFontFormat = u32_code!(b"CFF "),
+    CompactFontFormat2 = u32_code!(b"CFF2"),
     VORG = u32_code!(b"VORG"),
     EBDT = u32_code!(b"EBDT"),
     EBLC = u32_code!(b"EBLC"),
