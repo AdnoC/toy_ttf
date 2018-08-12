@@ -63,6 +63,7 @@ macro_rules! u32_code {
 }
 
 // Varius tags: http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=IWS-AppendixC
+// Tags less than 4 chars have trailing spaces
 #[repr(u32)]
 #[derive(Debug, FromPrimitive, PartialEq, Eq)]
 pub enum TableTag {
@@ -137,7 +138,7 @@ pub enum TableTag {
     GridFitAndScanConv = u32_code!(b"gasp"),
     ControlValueProgram = u32_code!(b"prep"),
     FontProgram = u32_code!(b"fpgm"),
-    ControlValue = u32_code!(b"cvt "), // Tags less than 4 chars have trailing spaces
+    ControlValue = u32_code!(b"cvt "),
     CompactFontFormat = u32_code!(b"CFF "),
     CompactFontFormat2 = u32_code!(b"CFF2"),
     VORG = u32_code!(b"VORG"),
