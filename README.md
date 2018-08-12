@@ -2,8 +2,12 @@ A toy .ttf renderer written in Rust.
 
 Very much work in progress.
 
-Currently working on: Fast-track to rendering
+Currently working on: Rendering multiple characters
 
-* Just parse what is necessary
+* Kerning?
+
+* Interpreter for instructions?
+
+* Just parsing what is necessary
 
 * Leave error-handling for later, just panic for now
