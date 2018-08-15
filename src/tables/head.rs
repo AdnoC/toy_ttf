@@ -10,7 +10,7 @@ pub struct Head {
     check_sum_adjustment: u32,
     magic_number: u32,
     flags: u16,
-    units_per_em: u16,
+    pub units_per_em: u16,
     created: LongDateTime,
     modified: LongDateTime,
     x_min: i16,

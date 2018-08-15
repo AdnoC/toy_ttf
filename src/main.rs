@@ -16,7 +16,6 @@ const ROBOTO: &'static str = "fonts/Roboto-Regular.ttf";
 fn main() {
     use toy_ttf::font::{GetTable, Font};
     use toy_ttf::tables::cmap::CMap;
-    use toy_ttf::tables::head::Head;
     use toy_ttf::tables::maxp::MaxP;
     use toy_ttf::tables::loca::Loca;
     use toy_ttf::tables::glyf::Glyf;
@@ -31,7 +30,7 @@ fn main() {
     // let glyph = font.get_glyph('𝕚').unwrap(); // Codepoint: 0x1d55a
     let glyph = font.get_glyph('²').unwrap(); // Has instructions
 
-    draw_glyph(&font, glyph);
+    draw_glyph(&font, glyph, 64);
 }
 
 fn render_glyph<'a>(font: &Font<'a>, raster: &mut impl Raster, affine: Affine, glyph: Glyph<'a>) {
@@ -103,7 +102,8 @@ fn render_glyph<'a>(font: &Font<'a>, raster: &mut impl Raster, affine: Affine, g
         },
     };
 }
-fn draw_glyph<'a>(font: &Font<'a>, glyph: Glyph<'a>) {
+fn draw_glyph<'a>(font: &Font<'a>, glyph: Glyph<'a>, size: usize) {
+    use toy_ttf::tables::head::Head;
 
     const PADDING: u32 = 0;
     let width = glyph.header.x_max - glyph.header.x_min;
@@ -111,6 +111,12 @@ fn draw_glyph<'a>(font: &Font<'a>, glyph: Glyph<'a>) {
     let x_shift = (PADDING as i16 / 2) - glyph.header.x_min;
     let y_shift = (PADDING as i16 / 2) - glyph.header.y_min;
     let affine = Affine::translation(x_shift, y_shift);
+
+    let head: Head = font.get_table().unwrap();
+    let scale = size as f32 / head.units_per_em as f32;
+    let affine = Affine::scale(scale, scale) * affine;
+    let width = (width as f32 * scale).ceil();
+    let height = (height as f32 * scale).ceil();
 
     println!("Raster (w, h) = ({}, {})", width as u32 + PADDING, height as u32 + PADDING);
     let mut raster = FillInRaster::new(width as u32 + PADDING, height as u32 + PADDING);
