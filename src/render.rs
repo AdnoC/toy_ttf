@@ -7,6 +7,81 @@ use tables::glyf::{Coordinate, SimpleCoordinates};
 
 type GrayDirectedImage = ImageBuffer<Luma<i16>, Vec<i16>>;
 
+/// Contains things for composing bitmaps of individual characters onto a
+/// string of text.
+pub mod compositor {
+    use image::GrayImage;
+    /// Abstraction over a string of text to render, who's characters have been
+    /// turned into bitmaps.
+    pub struct RenderedText {
+        img: GrayImage,
+        /// Distance from baseline to highest grid coordinate to place an outline point.
+        ascent: f32,
+        /// Distance from baseline to lowest grid coordinate to place an outline point.
+        descent: f32,
+        /// Distance that must be placed between two lines of text.
+        linegap: f32,
+        /// y-coordinate of the current baseline.
+        current_baseline_y: u32,
+    }
+
+    impl RenderedText {
+        pub fn add_glyph(&mut self) {
+            unimplemented!()
+        }
+        pub fn newline(&mut self) {
+            unimplemented!()
+        }
+    }
+
+    /// Abstraction over a single rendered glyph. Includes the information needed
+    /// to place it with the other rendered text.
+    ///
+    /// # Implicit Metrics
+    ///
+    /// * `width = img.width()`
+    ///
+    /// * `height = img.height()`
+    ///
+    /// * `right_bearing = placement_metrics.Advance::Width - width`
+    ///
+    /// * `bottom_bearing = placement_metrics.Advance::Height - height`
+    pub struct RenderedGlyph {
+        /// The bitmap of the glyph.
+        ///
+        /// Shouldn't have extra padding or stuff.
+        img: GrayImage,
+
+        placement_metrics: GlyphPlacementMetrics,
+    }
+
+    pub struct GlyphPlacementMetrics {
+        /// How much `img` is shifted away from (0, 0)
+        ///
+        /// (Since glyphs are meant to "rest" on the baseline)
+        ///
+        /// Is this needed?
+        shift: [f32; 2],
+        /// Horizontal distance from origin to `img` (left edge of bbox)
+        left_bearing: i16,
+        /// Vertical distance from origin to `img` (top edge of bbox)
+        top_bearing: i16,
+        /// After drawing a glyph you move the "pen" this amount in a certain direction.
+        advance: Advance,
+
+    }
+
+    /// After drawing a glyph you move the "pen" this amount in a certain direction.
+    /// You start with the next glyph from where you moved the "pen".
+    pub enum Advance {
+        /// Change in x-coordinate produced by drawing a glyph
+        Width(u16),
+        /// Change in y-coordinate produced by drawing a glyph
+        Height(u16),
+    }
+
+}
+
 pub trait Raster {
     fn new(width: u32, height: u32) -> Self; // Just for convenience of not needing another impl block
     fn add_line(&mut self, start: Point, end: Point);
