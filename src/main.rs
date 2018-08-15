@@ -1,4 +1,5 @@
 extern crate toy_ttf;
+extern crate image;
 use toy_ttf::tables::glyf::Glyph;
 use toy_ttf::math::{Point, Affine};
 use toy_ttf::render::*;
@@ -28,9 +29,14 @@ fn main() {
     // let glyph = font.get_glyph('¼').unwrap();
     // let glyph = font.get_glyph('✌').unwrap();
     // let glyph = font.get_glyph('𝕚').unwrap(); // Codepoint: 0x1d55a
-    let glyph = font.get_glyph('²').unwrap(); // Has instructions
+    // let glyph = font.get_glyph('²').unwrap(); // Has instructions
+    //
+    // let raster = draw_glyph(&font, glyph, 64);
+    //
+    // const img_file: &str = "RASTER_RESULT.bmp";
+    // raster.into_dynamic().save(img_file).unwrap();
 
-    draw_glyph(&font, glyph, 64);
+    draw_str(&font, "Hello, World!");
 }
 
 fn render_glyph<'a>(font: &Font<'a>, raster: &mut impl Raster, affine: Affine, glyph: Glyph<'a>) {
@@ -102,7 +108,7 @@ fn render_glyph<'a>(font: &Font<'a>, raster: &mut impl Raster, affine: Affine, g
         },
     };
 }
-fn draw_glyph<'a>(font: &Font<'a>, glyph: Glyph<'a>, size: usize) {
+fn draw_glyph<'a>(font: &Font<'a>, glyph: Glyph<'a>, size: usize) -> impl Raster {
     use toy_ttf::tables::head::Head;
 
     const PADDING: u32 = 0;
@@ -124,8 +130,40 @@ fn draw_glyph<'a>(font: &Font<'a>, glyph: Glyph<'a>, size: usize) {
 
     render_glyph(font, &mut raster, affine, glyph);
 
+    raster
+}
+
+fn draw_str<'a>(font: &Font<'a>, text: &str) {
+    use image::{GrayImage, GenericImage, imageops::flip_vertical};
+
+    let mut img = GrayImage::new(0, 0);
+    let size = 64;
+
+    for ch in text.chars() {
+        let glyph = font.get_glyph(ch).unwrap();
+
+        let raster = draw_glyph(&font, glyph, size);
+
+        let ch_dyn = raster.into_dynamic();
+        let ch_bitmap = ch_dyn.to_luma();
+        let ch_bitmap = flip_vertical(&ch_bitmap);
+
+        let (ch_w, ch_h) = ch_bitmap.dimensions();
+        let (img_w, img_h) = img.dimensions();
+
+        let old_img = img;
+
+        let width = img_w + ch_w;
+        let height = img_h.max(ch_h);
+
+        img = GrayImage::new(width, height);
+
+        img.copy_from(&old_img, 0, 0);
+        img.copy_from(&ch_bitmap, img_w, height - ch_h);
+    }
+
     const img_file: &str = "RASTER_RESULT.bmp";
-    raster.into_dynamic().save(img_file).unwrap();
+    img.save(img_file).unwrap();
 }
 
 fn load_file(name: &str) -> Vec<u8> {
