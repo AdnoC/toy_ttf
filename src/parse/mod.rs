@@ -93,6 +93,12 @@ impl<'a, T: Parse<'a>> DynArr<'a, T> {
         let cmp = f(&found_item);
         if cmp == Ordering::Equal { Some(found_item) } else { None }
     }
+
+    pub fn split_buf_for_len(buf: &'a[u8], len: usize) -> (&'a [u8], &'a [u8]) {
+        let idx = len * T::approx_file_size();
+        assert!(buf.len() >= idx);
+        buf.split_at(idx)
+    }
 }
 impl<'a, T: Parse<'a>> Parse<'a> for DynArr<'a, T> {
     fn approx_file_size() -> usize {
