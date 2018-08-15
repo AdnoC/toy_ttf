@@ -10,6 +10,8 @@ use render::compositor::{GlyphPlacementMetrics};
 use image::GrayImage;
 use math::Affine;
 
+// TODO: Canonical glyph_id type
+
 pub struct Font<'file> {
     buf: &'file [u8],
     pub(crate) font_dir: FontDirectory<'file>,
@@ -118,8 +120,10 @@ impl<'a> Font<'a> {
     fn placement_metrics(&self, code_point: char, size: usize) -> Option<GlyphPlacementMetrics> {
         use tables::head::Head;
 
+        let glyph_id = self.get_glyph_id(code_point)?;
+
         let shift = {
-            let glyph = self.get_glyph(code_point)?;
+            let glyph = self.get_glyph_for_id(glyph_id)?;
 
             let width = glyph.header.x_max - glyph.header.x_min;
             let height = glyph.header.y_max - glyph.header.y_min;
@@ -134,7 +138,11 @@ impl<'a> Font<'a> {
             affine.translation
         };
 
-        let hmtx: HMTX = self.get_table()?;
+        let horiz_metrics = {
+            let hmtx: HMTX = self.get_table()?;
+            hmtx.metrics_for_glyph(glyph_id)
+        };
+
 
         unimplemented!()
     }

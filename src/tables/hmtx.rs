@@ -30,7 +30,8 @@ impl<'a> HMTX<'a> {
         }
     }
 
-    pub fn metric_for_glyph(&self, glyph_id: usize) -> HorizMetric {
+    pub fn metrics_for_glyph(&self, glyph_id: u32) -> HorizMetric {
+        let glyph_id = glyph_id as usize;
         if glyph_id < self.horiz_metrics.len() {
             self.horiz_metrics.at(glyph_id).into()
         } else {

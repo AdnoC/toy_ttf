@@ -66,20 +66,11 @@ pub mod compositor {
         left_bearing: i16,
         /// Vertical distance from origin to `img` (top edge of bbox)
         top_bearing: i16,
-        /// After drawing a glyph you move the "pen" this amount in a certain direction.
-        advance: Advance,
-
+        /// After drawing a glyph you move the "pen" this amount right
+        horiz_advance: u16,
+        /// After drawing a glyph you move the "pen" this amount down
+        vert_advance: u16,
     }
-
-    /// After drawing a glyph you move the "pen" this amount in a certain direction.
-    /// You start with the next glyph from where you moved the "pen".
-    pub enum Advance {
-        /// Change in x-coordinate produced by drawing a glyph
-        Width(u16),
-        /// Change in y-coordinate produced by drawing a glyph
-        Height(u16),
-    }
-
 }
 
 pub trait Raster {
