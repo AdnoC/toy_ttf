@@ -33,7 +33,7 @@ fn main() {
         // // let glyph = font.get_glyph('𝕚').unwrap(); // Codepoint: 0x1d55a
         // // let glyph = font.get_glyph('²').unwrap(); // Has instructions
         // //
-        // let raster = draw_glyph(&font, glyph, 64);
+        // let raster = font.render_glyph(glyph, 64);
         //
         // const img_file: &str = "RASTER_RESULT.bmp";
         // raster.into_dynamic().save(img_file).unwrap();
@@ -43,113 +43,19 @@ fn main() {
     draw_str(&font, "Hello,_World!");
 }
 
-fn render_glyph<'a>(font: &Font<'a>, raster: &mut impl Raster, affine: Affine, glyph: Glyph<'a>) {
-    use toy_ttf::tables::glyf::{Coordinate, Description};
-
-    fn affine_dc(affine: Affine, dc: DrawCommand) -> DrawCommand {
-        dc
-        // match dc {
-        //     DrawCommand::Line(p1, p2) => DrawCommand::Line(affine * p1, affine *  p2),
-        //     DrawCommand::Curve(p1, m, p2) => DrawCommand::Curve(affine*p1, affine*m, affine*p2),
-        // }
-    }
-
-    match glyph.desc {
-        Description::Simple(glyph) => {
-            // for contour in glyph.contours() {
-            //     for dc in DrawCommands::from_coordinates(contour.into_iter()) {
-            //         println!("{:?}", affine_dc(affine, dc));
-            //         match dc {
-            //             DrawCommand::Line(p1, p2) => raster.draw_line(affine * p1, affine * p2),
-            //             DrawCommand::Curve(p1, m, p2) => {
-            //                 raster.draw_curve(affine * p1, affine * m, affine * p2);
-            //             },
-            //         }
-            //     }
-            // }
-            for contour in glyph.contours() {
-                for (start, end) in FlattenedDrawCommands::from_coordinates(contour.into_iter()) {
-                    // println!("({:?}, {:?})", affine*start, affine*end);
-                    raster.add_line(affine * start, affine * end);
-                }
-            }
-
-
-            // let first_coord = glyph.coordinates().next().unwrap();
-            // let mut last_coord = first_coord;
-            // for (c1, c2) in glyph.coordinates().zip(glyph.coordinates().skip(1)) {
-            //     last_coord = c2;
-            //     draw_coords(raster, c1, c2, affine);
-            // }
-            // draw_coords(raster, first_coord, last_coord, affine);
-            //
-            //
-            // fn draw_coords(r: &mut Raster, c1: Coordinate, c2: Coordinate, af: Affine) {
-            //     let p1 = Point {
-            //         x: c1.x as f32,
-            //         y: c1.y as f32,
-            //     };
-            //     let p2 = Point {
-            //         x: c2.x as f32,
-            //         y: c2.y as f32,
-            //     };
-            //
-            //     r.draw_line(af * p1, af * p2);
-            // }
-        },
-        Description::Composite(glyph) => {
-            use toy_ttf::tables::glyf::Glyf;
-            use toy_ttf::tables::loca::Loca;
-            for (sub_idx, sub_affine) in glyph.coordinates() {
-                let glyf: Glyf = font.get_table().unwrap();
-                let loca: Loca = font.get_table().unwrap();
-                let offset = loca.at(sub_idx).unwrap();
-                let sub_glyph = glyf.at_offset(offset as usize).unwrap();
-
-                // TODO Check affine order
-                render_glyph(font, raster, affine * sub_affine, sub_glyph);
-            }
-        },
-    };
-}
-fn draw_glyph<'a>(font: &Font<'a>, glyph: Glyph<'a>, size: usize) -> impl Raster {
-    use toy_ttf::tables::head::Head;
-
-    const PADDING: u32 = 0;
-    let width = glyph.header.x_max - glyph.header.x_min;
-    let height = glyph.header.y_max - glyph.header.y_min;
-    let x_shift = (PADDING as i16 / 2) - glyph.header.x_min;
-    let y_shift = (PADDING as i16 / 2) - glyph.header.y_min;
-    let affine = Affine::translation(x_shift, y_shift);
-
-    let head: Head = font.get_table().unwrap();
-    let scale = size as f32 / head.units_per_em as f32;
-    let affine = Affine::scale(scale, scale) * affine;
-    let width = (width as f32 * scale).ceil();
-    let height = (height as f32 * scale).ceil();
-
-    println!("Raster (w, h) = ({}, {})", width as u32 + PADDING, height as u32 + PADDING);
-    let mut raster = FillInRaster::new(width as u32 + PADDING, height as u32 + PADDING);
-    // let mut raster = OutlineRaster::new(width as u32 + PADDING, height as u32 + PADDING);
-
-    render_glyph(font, &mut raster, affine, glyph);
-
-    raster
-}
-
 fn draw_str<'a>(font: &Font<'a>, text: &str) {
     use image::{GrayImage, GenericImage, imageops::flip_vertical};
 
     let mut img = GrayImage::new(0, 0);
     let size = 64;
 
+    // How to actually lay out each char
+    // http://freetype.sourceforge.net/freetype2/docs/glyphs/Image3.png
     for ch in text.chars() {
         let glyph = font.get_glyph(ch).unwrap();
 
-        let raster = draw_glyph(&font, glyph, size);
+        let ch_bitmap = font.render_glyph(glyph, size);
 
-        let ch_dyn = raster.into_dynamic();
-        let ch_bitmap = ch_dyn.to_luma();
         let ch_bitmap = flip_vertical(&ch_bitmap);
 
         let (ch_w, ch_h) = ch_bitmap.dimensions();

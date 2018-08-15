@@ -4,6 +4,9 @@ use tables::font_directory::FontDirectory;
 use tables::loca::Loca;
 use tables::glyf::Glyph;
 use tables::{ParseTableError, ParseTableErrorInner, PrimaryTable};
+use render::*;
+use image::GrayImage;
+use math::Affine;
 
 pub struct Font<'file> {
     buf: &'file [u8],
@@ -51,6 +54,56 @@ impl<'a> Font<'a> {
         glyf.at_offset(glyph_offset as usize)
     }
 
+    pub fn render_glyph(&self, glyph: Glyph<'a>, size: usize) -> GrayImage {
+        use tables::head::Head;
+
+        const PADDING: u32 = 0;
+        let width = glyph.header.x_max - glyph.header.x_min;
+        let height = glyph.header.y_max - glyph.header.y_min;
+        let x_shift = (PADDING as i16 / 2) - glyph.header.x_min;
+        let y_shift = (PADDING as i16 / 2) - glyph.header.y_min;
+        let affine = Affine::translation(x_shift, y_shift);
+
+        let head: Head = self.get_table().unwrap();
+        let scale = size as f32 / head.units_per_em as f32;
+        let affine = Affine::scale(scale, scale) * affine;
+        let width = (width as f32 * scale).ceil();
+        let height = (height as f32 * scale).ceil();
+
+        println!("Raster (w, h) = ({}, {})", width as u32 + PADDING, height as u32 + PADDING);
+        let mut raster = FillInRaster::new(width as u32 + PADDING, height as u32 + PADDING);
+        // let mut raster = OutlineRaster::new(width as u32 + PADDING, height as u32 + PADDING);
+
+        self.render_glyph_inner(&mut raster, affine, glyph);
+
+        raster.into_dynamic().to_luma()
+    }
+
+    fn render_glyph_inner(&self, raster: &mut impl Raster, affine: Affine, glyph: Glyph<'a>) {
+        use tables::glyf::{Coordinate, Description};
+
+        match glyph.desc {
+            Description::Simple(glyph) => {
+                for contour in glyph.contours() {
+                    for (start, end) in FlattenedDrawCommands::from_coordinates(contour.into_iter()) {
+                        raster.add_line(affine * start, affine * end);
+                    }
+                }
+            },
+            Description::Composite(glyph) => {
+                use tables::glyf::Glyf;
+                use tables::loca::Loca;
+                for (sub_idx, sub_affine) in glyph.coordinates() {
+                    let glyf: Glyf = self.get_table().unwrap();
+                    let loca: Loca = self.get_table().unwrap();
+                    let offset = loca.at(sub_idx).unwrap();
+                    let sub_glyph = glyf.at_offset(offset as usize).unwrap();
+
+                    self.render_glyph_inner(raster, affine * sub_affine, sub_glyph);
+                }
+            },
+        };
+    }
 }
 
 pub trait GetTable<T> {
