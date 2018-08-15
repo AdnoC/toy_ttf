@@ -33,27 +33,37 @@ impl<'a> Font<'a> {
                                                       record.length as usize)])
     }
 
-    pub fn get_glyph(&self, code_point: char) -> Option<Glyph<'a>> {
-        use tables::cmap::{CMap, Format4, Format12};
+    pub fn get_glyph_for_id(&self, glyph_id: u32) -> Option<Glyph<'a>> {
         use tables::glyf::Glyf;
-        use std::u16;
-
         let loca: Loca = self.get_table()?;
-        let cmap: CMap = self.get_table()?;
         let glyf: Glyf = self.get_table()?;
 
-        let glyph_id = if (code_point as u32) < (u16::MAX as u32) {
-            let format4: Format4 = cmap.get_format()?;
-            format4.lookup_glyph_id(code_point as u32 as u16)? as u32
-        } else {
-            let format12: Format12 = cmap.get_format()?;
-            format12.lookup_glyph_id(code_point as u32)?
-        };
-        println!("[{}] Glyph_id = {}", code_point, glyph_id);
         let glyph_offset = loca.at(glyph_id as usize)?;
-        println!("[{}] Glyph_offset = {}", code_point, glyph_offset);
+        println!("\tGlyph_offset = {}", glyph_offset);
 
         glyf.at_offset(glyph_offset as usize)
+    }
+
+    pub fn get_glyph(&self, code_point: char) -> Option<Glyph<'a>> {
+        let glyph_id = self.get_glyph_id(code_point)?;
+
+        println!("[{}] Glyph_id = {}", code_point, glyph_id);
+        self.get_glyph_for_id(glyph_id)
+    }
+
+    pub fn get_glyph_id(&self, code_point: char) -> Option<u32> {
+        use tables::cmap::{CMap, Format4, Format12};
+        use std::u16;
+
+        let cmap: CMap = self.get_table()?;
+
+        if (code_point as u32) < (u16::MAX as u32) {
+            let format4: Format4 = cmap.get_format()?;
+            format4.lookup_glyph_id(code_point as u32 as u16).map(|val| val as u32)
+        } else {
+            let format12: Format12 = cmap.get_format()?;
+            format12.lookup_glyph_id(code_point as u32)
+        }
     }
 
     pub fn render_glyph(&self, glyph: Glyph<'a>, size: usize) -> GrayImage {
@@ -105,7 +115,27 @@ impl<'a> Font<'a> {
         };
     }
 
-    fn placement_metrics(&self, code_point: char) -> Option<GlyphPlacementMetrics> {
+    fn placement_metrics(&self, code_point: char, size: usize) -> Option<GlyphPlacementMetrics> {
+        use tables::head::Head;
+
+        let shift = {
+            let glyph = self.get_glyph(code_point)?;
+
+            let width = glyph.header.x_max - glyph.header.x_min;
+            let height = glyph.header.y_max - glyph.header.y_min;
+            let x_shift = -glyph.header.x_min;
+            let y_shift = -glyph.header.y_min;
+            let affine = Affine::translation(x_shift, y_shift);
+
+            let head: Head = self.get_table().unwrap();
+            let scale = size as f32 / head.units_per_em as f32;
+            let affine = Affine::scale(scale, scale) * affine;
+
+            affine.translation
+        };
+
+        let hmtx: HMTX = self.get_table()?;
+
         unimplemented!()
     }
 }
