@@ -44,7 +44,10 @@ impl<'a> Font<'a> {
             let format12: Format12 = cmap.get_format()?;
             format12.lookup_glyph_id(code_point as u32)?
         };
-        let glyph_offset = loca.at(glyph_id as usize);
+        println!("[{}] Glyph_id = {}", code_point, glyph_id);
+        let glyph_offset = loca.at(glyph_id as usize)?;
+        println!("[{}] Glyph_offset = {}", code_point, glyph_offset);
+
         glyf.at_offset(glyph_offset as usize)
     }
 

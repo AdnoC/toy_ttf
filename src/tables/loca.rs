@@ -20,7 +20,19 @@ impl<'a> PrimaryTable for Loca<'a> {
 }
 
 impl<'a> Loca<'a> {
-    pub fn at(&self, idx: usize) -> u32 {
+    pub fn at(&self, idx: usize) -> Option<u32> {
+        // If a glyph has no outline, then loca[n] = loca [n+1]
+        let offset = self.at_inner(idx);
+        let next_offset = self.at_inner(idx + 1);
+
+        if offset == next_offset {
+            None
+        } else {
+            Some(offset)
+        }
+    }
+
+    fn at_inner(&self, idx: usize) -> u32 {
         use self::Loca::*;
         match self {
             Short(arr) => arr.0.at(idx) as u32,

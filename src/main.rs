@@ -25,18 +25,22 @@ fn main() {
     // toy_ttf::parse::load_font(&font_buf);
 
     let font = Font::from_buffer(&font_buf).unwrap();
-    // let glyph = font.get_glyph('S').unwrap();
-    // let glyph = font.get_glyph('¼').unwrap();
-    // let glyph = font.get_glyph('✌').unwrap();
-    // let glyph = font.get_glyph('𝕚').unwrap(); // Codepoint: 0x1d55a
-    // let glyph = font.get_glyph('²').unwrap(); // Has instructions
-    //
-    // let raster = draw_glyph(&font, glyph, 64);
-    //
-    // const img_file: &str = "RASTER_RESULT.bmp";
-    // raster.into_dynamic().save(img_file).unwrap();
+    {
+        // let glyph = font.get_glyph(' ').unwrap();
+        // // let glyph = font.get_glyph('S').unwrap();
+        // // let glyph = font.get_glyph('¼').unwrap();
+        // // let glyph = font.get_glyph('✌').unwrap();
+        // // let glyph = font.get_glyph('𝕚').unwrap(); // Codepoint: 0x1d55a
+        // // let glyph = font.get_glyph('²').unwrap(); // Has instructions
+        // //
+        // let raster = draw_glyph(&font, glyph, 64);
+        //
+        // const img_file: &str = "RASTER_RESULT.bmp";
+        // raster.into_dynamic().save(img_file).unwrap();
+        //
+    }
 
-    draw_str(&font, "Hello, World!");
+    draw_str(&font, "Hello,_World!");
 }
 
 fn render_glyph<'a>(font: &Font<'a>, raster: &mut impl Raster, affine: Affine, glyph: Glyph<'a>) {
@@ -99,7 +103,7 @@ fn render_glyph<'a>(font: &Font<'a>, raster: &mut impl Raster, affine: Affine, g
             for (sub_idx, sub_affine) in glyph.coordinates() {
                 let glyf: Glyf = font.get_table().unwrap();
                 let loca: Loca = font.get_table().unwrap();
-                let offset = loca.at(sub_idx);
+                let offset = loca.at(sub_idx).unwrap();
                 let sub_glyph = glyf.at_offset(offset as usize).unwrap();
 
                 // TODO Check affine order
