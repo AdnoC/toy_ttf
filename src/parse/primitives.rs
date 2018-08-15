@@ -1,5 +1,6 @@
 use byteorder::{BigEndian, ByteOrder};
 use parse::Parse;
+use std::marker::PhantomData;
 
 pub type ShortFrac = i16;
 pub type FWord = i16;
@@ -20,6 +21,7 @@ impl<'a> Parse<'a> for F2Dot14 {
     }
 }
 
+
 // Represents the number (self.0).(self.1)
 // e.g. 0.5 is (0x0000).(0x5000)
 #[derive(Debug, Parse, PartialEq, Eq, PartialOrd, Ord)]
@@ -33,6 +35,19 @@ pub struct Fixed(pub i16, pub i16);
 //         (buf, buf)
 //     }
 // }
+
+
+/// Type to be used when you have something that implements `Parse`
+/// but doesn't use a lifetime. Just add a member of type `PhantomLifetime`.
+pub type PhantomLifetime<'a> = PhantomData<&'a ()>;
+impl<'a> Parse<'a> for PhantomLifetime<'a> {
+    fn approx_file_size() -> usize {
+        0
+    }
+    fn parse(buf: &[u8]) -> (&[u8], PhantomLifetime) {
+        (buf, PhantomData)
+    }
+}
 
 macro_rules! impl_primitives {
     ($($prim:ty : $parser:expr),*) => {
