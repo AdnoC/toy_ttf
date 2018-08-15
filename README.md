@@ -6,7 +6,9 @@ Currently working on: Rendering multiple characters
 
 * Kerning?
 
-* Interpreter for instructions?
+* Placing the glyph bitmap in place
+
+* Interpreter for instructions? Or is that for single characters?
 
 * Just parsing what is necessary
 
