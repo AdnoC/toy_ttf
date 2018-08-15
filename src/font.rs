@@ -138,6 +138,8 @@ impl<'a> GetTable<Loca<'a>> for Font<'a> {
 
         let loca_buf = self.get_table_slice::<Loca>()?;
 
+        // TODO: Move this into tables/loca.rs
+
         let loca = match format {
             IndexToLocFormat::Short => Loca::Short(S(DynArr(loca_buf, PhantomData))),
             IndexToLocFormat::Long => Loca::Long(L(DynArr(loca_buf, PhantomData))),
