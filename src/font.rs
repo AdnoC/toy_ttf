@@ -3,8 +3,10 @@ use parse::Parse;
 use tables::font_directory::FontDirectory;
 use tables::loca::Loca;
 use tables::glyf::Glyph;
+use tables::hmtx::HMTX;
 use tables::{ParseTableError, ParseTableErrorInner, PrimaryTable};
 use render::*;
+use render::compositor::{GlyphPlacementMetrics};
 use image::GrayImage;
 use math::Affine;
 
@@ -57,11 +59,10 @@ impl<'a> Font<'a> {
     pub fn render_glyph(&self, glyph: Glyph<'a>, size: usize) -> GrayImage {
         use tables::head::Head;
 
-        const PADDING: u32 = 0;
         let width = glyph.header.x_max - glyph.header.x_min;
         let height = glyph.header.y_max - glyph.header.y_min;
-        let x_shift = (PADDING as i16 / 2) - glyph.header.x_min;
-        let y_shift = (PADDING as i16 / 2) - glyph.header.y_min;
+        let x_shift = -glyph.header.x_min;
+        let y_shift = -glyph.header.y_min;
         let affine = Affine::translation(x_shift, y_shift);
 
         let head: Head = self.get_table().unwrap();
@@ -70,9 +71,8 @@ impl<'a> Font<'a> {
         let width = (width as f32 * scale).ceil();
         let height = (height as f32 * scale).ceil();
 
-        println!("Raster (w, h) = ({}, {})", width as u32 + PADDING, height as u32 + PADDING);
-        let mut raster = FillInRaster::new(width as u32 + PADDING, height as u32 + PADDING);
-        // let mut raster = OutlineRaster::new(width as u32 + PADDING, height as u32 + PADDING);
+        println!("Raster (w, h) = ({}, {})", width as u32, height as u32);
+        let mut raster = FillInRaster::new(width as u32, height as u32);
 
         self.render_glyph_inner(&mut raster, affine, glyph);
 
@@ -103,6 +103,10 @@ impl<'a> Font<'a> {
                 }
             },
         };
+    }
+
+    fn placement_metrics(&self, code_point: char) -> Option<GlyphPlacementMetrics> {
+        unimplemented!()
     }
 }
 
@@ -142,6 +146,21 @@ impl<'a> GetTable<Loca<'a>> for Font<'a> {
         Some(loca)
     }
 
+}
+
+impl<'a> GetTable<HMTX<'a>> for Font<'a> {
+    fn get_table(&self) -> Option<HMTX<'a>> {
+        use tables::hhea::HHEA;
+
+        let hhea: HHEA = self.get_table()?;
+        let num_horiz_metrics = hhea.num_horiz_metrics;
+
+        let hmtx_buf = self.get_table_slice::<HMTX>()?;
+
+        let hmtx = HMTX::parse_metrics(hmtx_buf, num_horiz_metrics);
+
+        Some(hmtx)
+    }
 }
 
 // FIXME: Change from just a typedef of IResult's error type

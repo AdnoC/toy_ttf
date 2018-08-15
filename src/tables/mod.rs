@@ -5,6 +5,8 @@ pub mod loca;
 pub mod maxp;
 pub mod glyf;
 pub mod name;
+pub mod hhea;
+pub mod hmtx;
 
 pub enum ParseTableErrorInner {
     TableNotFound,
