@@ -9,11 +9,11 @@ pub struct HHEA<'a> {
     /// 0x00010000 (1.0)
     version: Fixed,
     /// Distance from baseline of highest ascender
-    ascent: FWord,
+    pub ascent: FWord,
     /// Distance from baseline of lowest descender
-    descent: FWord,
+    pub descent: FWord,
     /// typographic line gap
-    line_gap: FWord,
+    pub line_gap: FWord,
     /// must be consistent with horizontal metrics
     advance_width_max: UFWord,
     /// must be consistent with horizontal metrics

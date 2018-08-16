@@ -11,27 +11,51 @@ type GrayDirectedImage = ImageBuffer<Luma<i16>, Vec<i16>>;
 /// string of text.
 pub mod compositor {
     use image::GrayImage;
+    use tables::hhea::HHEA;
     /// Abstraction over a string of text to render, who's characters have been
     /// turned into bitmaps.
     pub struct RenderedText {
         img: GrayImage,
         /// Distance from baseline to highest grid coordinate to place an outline point.
-        ascent: f32,
+        ascent: i16,
         /// Distance from baseline to lowest grid coordinate to place an outline point.
-        descent: f32,
+        descent: i16,
         /// Distance that must be placed between two lines of text.
-        linegap: f32,
+        line_gap: i16,
         /// y-coordinate of the current baseline.
         current_baseline_y: u32,
+        /// What direction are we writing the text?
+        text_direction: TextDirection,
     }
 
     impl RenderedText {
+        pub fn new_horizontal<'a>(horiz_header: &HHEA<'a>, text_direction: TextDirection) -> RenderedText {
+            RenderedText {
+                img: GrayImage::new(0, 0),
+                ascent: horiz_header.ascent,
+                descent: horiz_header.descent,
+                line_gap: horiz_header.line_gap,
+                current_baseline_y: 0,
+                text_direction,
+            }
+
+        }
+        pub fn new_left_to_right<'a>(horiz_header: &HHEA<'a>) -> RenderedText {
+            Self::new_horizontal(horiz_header, TextDirection::Right)
+        }
         pub fn add_glyph(&mut self) {
             unimplemented!()
         }
         pub fn newline(&mut self) {
             unimplemented!()
         }
+    }
+
+    pub enum TextDirection {
+        Left,
+        Right,
+        Up,
+        Down,
     }
 
     /// Abstraction over a single rendered glyph. Includes the information needed

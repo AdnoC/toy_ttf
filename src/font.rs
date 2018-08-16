@@ -7,7 +7,7 @@ use tables::hmtx::HMTX;
 use tables::vmtx::VMTX;
 use tables::{ParseTableError, ParseTableErrorInner, PrimaryTable};
 use render::*;
-use render::compositor::{GlyphPlacementMetrics};
+use render::compositor::{GlyphPlacementMetrics, RenderedText};
 use image::GrayImage;
 use math::Affine;
 
