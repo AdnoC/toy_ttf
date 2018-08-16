@@ -43,6 +43,30 @@ fn main() {
     draw_str(&font, "Hello,_World!");
 }
 
+fn draw_str_renderedtext<'a>(font: &Font<'a>, text: &str) {
+    use toy_ttf::render::compositor::*;
+    use toy_ttf::tables::hhea::HHEA;
+
+    let hhea: HHEA = font.get_table().unwrap();
+    let mut rend_txt = RenderedText::new_left_to_right(&hhea);
+
+    let size = 64;
+
+    for ch in text.chars() {
+        let glyph = font.get_glyph(ch).unwrap();
+
+        let ch_bitmap = font.render_glyph(glyph, size);
+        // let ch_bitmap = flip_vertical(&ch_bitmap);
+
+        let placement_metrics = font.placement_metrics(ch, size).unwrap();
+
+        rend_txt.add_glyph(ch_bitmap, placement_metrics);
+    }
+
+    const img_file: &str = "RASTER_RESULT.bmp";
+    rend_txt.img.save(img_file).unwrap();
+}
+
 fn draw_str<'a>(font: &Font<'a>, text: &str) {
     use image::{GrayImage, GenericImage, imageops::flip_vertical};
 
@@ -54,6 +78,8 @@ fn draw_str<'a>(font: &Font<'a>, text: &str) {
     for ch in text.chars() {
         let glyph = font.get_glyph(ch).unwrap();
 
+        // let ch_dyn = raster.into_dynamic();
+        // let ch_bitmap = ch_dyn.to_luma();
         let ch_bitmap = font.render_glyph(glyph, size);
 
         let ch_bitmap = flip_vertical(&ch_bitmap);

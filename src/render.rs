@@ -15,7 +15,7 @@ pub mod compositor {
     /// Abstraction over a string of text to render, who's characters have been
     /// turned into bitmaps.
     pub struct RenderedText {
-        img: GrayImage,
+        pub img: GrayImage,
         /// Distance from baseline to highest grid coordinate to place an outline point.
         ascent: i16,
         /// Distance from baseline to lowest grid coordinate to place an outline point.
@@ -40,10 +40,12 @@ pub mod compositor {
             }
 
         }
+
         pub fn new_left_to_right<'a>(horiz_header: &HHEA<'a>) -> RenderedText {
             Self::new_horizontal(horiz_header, TextDirection::Right)
         }
-        pub fn add_glyph(&mut self) {
+
+        pub fn add_glyph(&mut self, glyph_bmp: GrayImage, placement_metrics: GlyphPlacementMetrics) {
             unimplemented!()
         }
         pub fn newline(&mut self) {
@@ -70,15 +72,6 @@ pub mod compositor {
     /// * `right_bearing = placement_metrics.Advance::Width - width`
     ///
     /// * `bottom_bearing = placement_metrics.Advance::Height - height`
-    pub struct RenderedGlyph {
-        /// The bitmap of the glyph.
-        ///
-        /// Shouldn't have extra padding or stuff.
-        img: GrayImage,
-
-        placement_metrics: GlyphPlacementMetrics,
-    }
-
     pub struct GlyphPlacementMetrics {
         /// How much `img` is shifted away from (0, 0)
         ///

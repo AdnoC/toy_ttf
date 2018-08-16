@@ -118,7 +118,7 @@ impl<'a> Font<'a> {
         };
     }
 
-    fn placement_metrics(&self, code_point: char, size: usize) -> Option<GlyphPlacementMetrics> {
+    pub fn placement_metrics(&self, code_point: char, size: usize) -> Option<GlyphPlacementMetrics> {
         use tables::head::Head;
 
         let glyph_id = self.get_glyph_id(code_point)?;

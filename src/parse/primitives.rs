@@ -3,6 +3,7 @@ use parse::Parse;
 use std::marker::PhantomData;
 
 pub type ShortFrac = i16;
+/// A quantity in Font Units
 pub type FWord = i16;
 pub type UFWord = u16;
 pub type LongDateTime = i64;
