@@ -4,6 +4,7 @@ use tables::font_directory::FontDirectory;
 use tables::loca::Loca;
 use tables::glyf::Glyph;
 use tables::hmtx::HMTX;
+use tables::vmtx::VMTX;
 use tables::{ParseTableError, ParseTableErrorInner, PrimaryTable};
 use render::*;
 use render::compositor::{GlyphPlacementMetrics};
@@ -200,6 +201,21 @@ impl<'a> GetTable<HMTX<'a>> for Font<'a> {
         let hmtx = HMTX::parse_metrics(hmtx_buf, num_horiz_metrics);
 
         Some(hmtx)
+    }
+}
+
+impl<'a> GetTable<VMTX<'a>> for Font<'a> {
+    fn get_table(&self) -> Option<VMTX<'a>> {
+        use tables::vhea::VHEA;
+
+        let vhea: VHEA = self.get_table()?;
+        let num_vert_metrics = vhea.num_vert_metrics;
+
+        let vmtx_buf = self.get_table_slice::<VMTX>()?;
+
+        let vmtx = VMTX::parse_metrics(vmtx_buf, num_vert_metrics);
+
+        Some(vmtx)
     }
 }
 
