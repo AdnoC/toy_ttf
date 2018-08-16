@@ -2,10 +2,39 @@ use byteorder::{BigEndian, ByteOrder};
 use parse::Parse;
 use std::marker::PhantomData;
 
-pub type ShortFrac = i16;
+use font::Font;
 /// A quantity in Font Units
-pub type FWord = i16;
-pub type UFWord = u16;
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
+pub struct FontUnit<T>(T);
+impl<T: Into<f32>> FontUnit< T> {
+    fn funits_to_pixels_rat<'a>(font: &Font<'a>, point_size: usize) -> f32 {
+        use font::GetTable;
+        use tables::head::Head;
+        let resolution = 72; // dpi
+
+        let head: Head = font.get_table().unwrap();
+
+        (point_size * resolution) as f32 / (72 * head.units_per_em) as f32
+    }
+
+    pub fn to_pixels<'a>(self, font: &Font<'a>, point_size: usize) -> f32 {
+        let units: f32 = self.0.into();
+        units * Self::funits_to_pixels_rat(font, point_size)
+    }
+}
+impl<'a, T: Parse<'a>> Parse<'a> for FontUnit<T> {
+    fn approx_file_size() -> usize {
+        T::approx_file_size()
+    }
+    fn parse(buf: &'a [u8]) -> (&'a [u8], Self) {
+        let (buf, val) = T::parse(buf);
+        (buf, FontUnit(val))
+    }
+}
+
+pub type ShortFrac = i16;
+pub type FWord = FontUnit<i16>;
+pub type UFWord = FontUnit<u16>;
 pub type LongDateTime = i64;
 
 #[derive(Debug, PartialEq, PartialOrd)]
