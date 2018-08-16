@@ -2,6 +2,7 @@ use parse::{Parse};
 use parse::primitives::{Fixed, FWord, UFWord, PhantomLifetime};
 use tables::{PrimaryTable, TableTag};
 
+// Comments taken from Apple hhea table docs
 #[derive(Debug, Parse)]
 pub struct HHEA<'a> {
     _lifetime_use: PhantomLifetime<'a>,
