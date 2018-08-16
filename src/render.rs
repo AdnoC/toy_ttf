@@ -12,6 +12,7 @@ type GrayDirectedImage = ImageBuffer<Luma<i16>, Vec<i16>>;
 pub mod compositor {
     use image::GrayImage;
     use tables::hhea::HHEA;
+    use parse::primitives::FontUnit;
     /// Abstraction over a string of text to render, who's characters have been
     /// turned into bitmaps.
     pub struct RenderedText {
@@ -26,23 +27,30 @@ pub mod compositor {
         current_baseline_y: u32,
         /// What direction are we writing the text?
         text_direction: TextDirection,
+        /// How big to render things
+        point_size: usize,
+        units_per_em: u16,
     }
 
     impl RenderedText {
-        pub fn new_horizontal<'a>(horiz_header: &HHEA<'a>, text_direction: TextDirection) -> RenderedText {
+        pub fn new_horizontal<'a>(horiz_header: &HHEA<'a>, point_size: usize,
+                                  units_per_em: u16, text_direction: TextDirection) -> RenderedText {
             RenderedText {
                 img: GrayImage::new(0, 0),
-                ascent: horiz_header.ascent,
-                descent: horiz_header.descent,
-                line_gap: horiz_header.line_gap,
+                ascent: horiz_header.ascent.to_pixels(units_per_em, point_size) as i16,
+                descent: horiz_header.descent.to_pixels(units_per_em, point_size) as i16,
+                line_gap: horiz_header.line_gap.to_pixels(units_per_em, point_size) as i16,
                 current_baseline_y: 0,
                 text_direction,
+                point_size,
+                units_per_em,
             }
 
         }
 
-        pub fn new_left_to_right<'a>(horiz_header: &HHEA<'a>) -> RenderedText {
-            Self::new_horizontal(horiz_header, TextDirection::Right)
+        pub fn new_left_to_right<'a>(horiz_header: &HHEA<'a>, point_size: usize,
+                                     units_per_em: u16) -> RenderedText {
+            Self::new_horizontal(horiz_header, point_size, units_per_em, TextDirection::Right)
         }
 
         pub fn add_glyph(&mut self, glyph_bmp: GrayImage, placement_metrics: GlyphPlacementMetrics) {
@@ -78,15 +86,15 @@ pub mod compositor {
         /// (Since glyphs are meant to "rest" on the baseline)
         ///
         /// Is this needed?
-        pub shift: [f32; 2],
+        pub shift: [FontUnit<f32>; 2],
         /// Horizontal distance from origin to `img` (left edge of bbox)
-        pub left_bearing: i16,
+        pub left_bearing: FontUnit<i16>,
         /// Vertical distance from origin to `img` (top edge of bbox)
-        pub top_bearing: i16,
+        pub top_bearing: FontUnit<i16>,
         /// After drawing a glyph you move the "pen" this amount right
-        pub horiz_advance: Option<u16>,
+        pub horiz_advance: Option<FontUnit<u16>>,
         /// After drawing a glyph you move the "pen" this amount down
-        pub vert_advance: Option<u16>,
+        pub vert_advance: Option<FontUnit<u16>>,
     }
 }
 

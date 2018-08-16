@@ -46,11 +46,14 @@ fn main() {
 fn draw_str_renderedtext<'a>(font: &Font<'a>, text: &str) {
     use toy_ttf::render::compositor::*;
     use toy_ttf::tables::hhea::HHEA;
+    use toy_ttf::tables::head::Head;
 
     let hhea: HHEA = font.get_table().unwrap();
-    let mut rend_txt = RenderedText::new_left_to_right(&hhea);
+    let head: Head = font.get_table().unwrap();
 
     let size = 64;
+
+    let mut rend_txt = RenderedText::new_left_to_right(&hhea, size, head.units_per_em);
 
     for ch in text.chars() {
         let glyph = font.get_glyph(ch).unwrap();

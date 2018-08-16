@@ -2,6 +2,8 @@ use parse::{Parse, BufView, DynArr};
 use tables::{PrimaryTable, TableTag};
 use math::Affine;
 
+// TODO: Glyph coordinate points are in `FontUnit`s
+
 // Total # of glyphs is `num_glyphs` in MaxP table
 // Loca table provides index of glyph by glyph_id
 

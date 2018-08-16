@@ -1,5 +1,5 @@
 use parse::{DynArr, Parse};
-use parse::primitives::FWord;
+use parse::primitives::{FWord, FontUnit};
 use tables::{PrimaryTable, TableTag};
 
 #[derive(Debug)]
@@ -43,18 +43,18 @@ impl<'a> HMTX<'a> {
 
 #[derive(Debug, Parse)]
 pub struct LongHorizMetric {
-    advance_width: u16,
-    left_bearing: i16,
+    advance_width: FontUnit<u16>,
+    left_bearing: FontUnit<i16>,
 }
 
 #[derive(Debug)]
 pub struct HorizMetric {
-    pub advance_width: Option<u16>,
-    pub left_bearing: i16,
+    pub advance_width: Option<FontUnit<u16>>,
+    pub left_bearing: FontUnit<i16>,
 }
 
-impl From<i16> for HorizMetric {
-    fn from(left_bearing: i16) -> Self {
+impl From<FontUnit<i16>> for HorizMetric {
+    fn from(left_bearing: FontUnit<i16>) -> Self {
         HorizMetric {
             advance_width: None,
             left_bearing,

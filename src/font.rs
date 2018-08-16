@@ -1,5 +1,6 @@
 use parse::font_directory::parse_font_directory;
 use parse::Parse;
+use parse::primitives::FontUnit;
 use tables::font_directory::FontDirectory;
 use tables::loca::Loca;
 use tables::glyf::Glyph;
@@ -132,11 +133,12 @@ impl<'a> Font<'a> {
             let y_shift = -glyph.header.y_min;
             let affine = Affine::translation(x_shift, y_shift);
 
-            let head: Head = self.get_table().unwrap();
-            let scale = size as f32 / head.units_per_em as f32;
-            let affine = Affine::scale(scale, scale) * affine;
+            // let head: Head = self.get_table().unwrap();
+            // let scale = size as f32 / head.units_per_em as f32;
+            // let affine = Affine::scale(scale, scale) * affine;
 
-            affine.translation
+            let trans = affine.translation;
+            [trans[0].into(), trans[1].into()]
         };
 
         let horiz_metrics = {
@@ -150,7 +152,7 @@ impl<'a> Font<'a> {
 
         let placement_metrics = GlyphPlacementMetrics {
             shift,
-            left_bearing: horiz_metrics.left_bearing, 
+            left_bearing: horiz_metrics.left_bearing,
             top_bearing: vert_metrics.top_bearing,
             horiz_advance: horiz_metrics.advance_width,
             vert_advance: vert_metrics.advance_height,
@@ -158,6 +160,7 @@ impl<'a> Font<'a> {
 
         Some(placement_metrics)
     }
+
 }
 
 pub trait GetTable<T> {

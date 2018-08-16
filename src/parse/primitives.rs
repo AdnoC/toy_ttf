@@ -4,22 +4,25 @@ use std::marker::PhantomData;
 
 use font::Font;
 /// A quantity in Font Units
-#[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone, Copy)]
 pub struct FontUnit<T>(T);
 impl<T: Into<f32>> FontUnit< T> {
-    fn funits_to_pixels_rat<'a>(font: &Font<'a>, point_size: usize) -> f32 {
+    fn funits_to_pixels_rat<'a>(units_per_em: u16, point_size: usize) -> f32 {
+        let resolution = 72; // dpi
+        (point_size * resolution) as f32 / (72 * units_per_em) as f32
+    }
+
+    pub fn to_pixels<'a>(self, units_per_em: u16, point_size: usize) -> f32 {
+        let units: f32 = self.0.into();
+        units * Self::funits_to_pixels_rat(units_per_em, point_size)
+    }
+    pub fn to_pixels_font<'a>(self, font: &Font<'a>, point_size: usize) -> f32 {
         use font::GetTable;
         use tables::head::Head;
-        let resolution = 72; // dpi
 
         let head: Head = font.get_table().unwrap();
 
-        (point_size * resolution) as f32 / (72 * head.units_per_em) as f32
-    }
-
-    pub fn to_pixels<'a>(self, font: &Font<'a>, point_size: usize) -> f32 {
-        let units: f32 = self.0.into();
-        units * Self::funits_to_pixels_rat(font, point_size)
+        self.to_pixels(head.units_per_em, point_size)
     }
 }
 impl<'a, T: Parse<'a>> Parse<'a> for FontUnit<T> {
@@ -29,6 +32,11 @@ impl<'a, T: Parse<'a>> Parse<'a> for FontUnit<T> {
     fn parse(buf: &'a [u8]) -> (&'a [u8], Self) {
         let (buf, val) = T::parse(buf);
         (buf, FontUnit(val))
+    }
+}
+impl<T> From<T> for FontUnit<T> {
+    fn from(val: T) -> Self {
+        FontUnit(val)
     }
 }
 
