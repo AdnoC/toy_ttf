@@ -8,6 +8,7 @@ pub mod name;
 pub mod hhea;
 pub mod hmtx;
 pub mod vhea;
+pub mod vmtx;
 
 pub enum ParseTableErrorInner {
     TableNotFound,
