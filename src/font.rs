@@ -143,9 +143,20 @@ impl<'a> Font<'a> {
             let hmtx: HMTX = self.get_table()?;
             hmtx.metrics_for_glyph(glyph_id)
         };
+        let vert_metrics = {
+            let vmtx: VMTX = self.get_table()?;
+            vmtx.metrics_for_glyph(glyph_id)
+        };
 
+        let placement_metrics = GlyphPlacementMetrics {
+            shift,
+            left_bearing: horiz_metrics.left_bearing, 
+            top_bearing: vert_metrics.top_bearing,
+            horiz_advance: horiz_metrics.advance_width,
+            vert_advance: vert_metrics.advance_height,
+        };
 
-        unimplemented!()
+        Some(placement_metrics)
     }
 }
 

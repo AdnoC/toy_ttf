@@ -49,8 +49,8 @@ pub struct LongHorizMetric {
 
 #[derive(Debug)]
 pub struct HorizMetric {
-    advance_width: Option<u16>,
-    left_bearing: i16,
+    pub advance_width: Option<u16>,
+    pub left_bearing: i16,
 }
 
 impl From<i16> for HorizMetric {

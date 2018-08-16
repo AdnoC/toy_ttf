@@ -61,15 +61,15 @@ pub mod compositor {
         /// (Since glyphs are meant to "rest" on the baseline)
         ///
         /// Is this needed?
-        shift: [f32; 2],
+        pub shift: [f32; 2],
         /// Horizontal distance from origin to `img` (left edge of bbox)
-        left_bearing: i16,
+        pub left_bearing: i16,
         /// Vertical distance from origin to `img` (top edge of bbox)
-        top_bearing: i16,
+        pub top_bearing: i16,
         /// After drawing a glyph you move the "pen" this amount right
-        horiz_advance: u16,
+        pub horiz_advance: Option<u16>,
         /// After drawing a glyph you move the "pen" this amount down
-        vert_advance: u16,
+        pub vert_advance: Option<u16>,
     }
 }
 
