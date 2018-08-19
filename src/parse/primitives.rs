@@ -1,6 +1,7 @@
 use byteorder::{BigEndian, ByteOrder};
 use parse::Parse;
 use std::marker::PhantomData;
+use std::ops::{Add, Sub, Mul};
 
 use font::Font;
 macro_rules! newtype_unit_wrapper {
@@ -28,6 +29,35 @@ macro_rules! newtype_unit_wrapper {
                 $name(val)
             }
         }
+        impl<T> $name<T> {
+            pub fn map<U, F: Fn(T) -> U>(self, f: F) -> $name<U> {
+                $name(f(self.0))
+            }
+        }
+
+        impl<T: Add<T>> Add for $name<T> {
+            type Output = $name<T::Output>;
+
+            fn add(self, rhs: $name<T>) -> $name<T::Output> {
+                $name(self.0 + rhs.0)
+            }
+        }
+
+        impl<T: Sub<T>> Sub for $name<T> {
+            type Output = $name<T::Output>;
+
+            fn sub(self, rhs: $name<T>) -> $name<T::Output> {
+                $name(self.0 - rhs.0)
+            }
+        }
+
+        impl<T: Mul<T>> Mul for $name<T> {
+            type Output = $name<T::Output>;
+
+            fn mul(self, rhs: $name<T>) -> $name<T::Output> {
+                $name(self.0 * rhs.0)
+            }
+        }
     }
 }
 
@@ -35,7 +65,7 @@ newtype_unit_wrapper!(
     /// A quantity in Font Units
     pub unit FontUnit);
 
-impl<T: Into<f32>> FontUnit< T> {
+impl<T: Into<f32>> FontUnit<T> {
     fn funits_to_pixels_rat<'a>(units_per_em: u16, point_size: usize) -> f32 {
         let resolution = 72.; // dpi
         (point_size as f32 * resolution) / (72. * units_per_em as f32)

@@ -155,7 +155,7 @@ impl<'a> Font<'a> {
         let glyph = self.get_glyph_for_id(glyph_id)?;
         let width: FontUnit<_> = (glyph.header.x_max - glyph.header.x_min).into();
         let height: FontUnit<_> = (glyph.header.y_max - glyph.header.y_min).into();
-        let shift = {
+        let shift: [FontUnit<_>; 2] = {
             let x_shift = -glyph.header.x_min;
             let y_shift = -glyph.header.y_min;
             let affine = Affine::translation(x_shift, y_shift);
@@ -172,12 +172,12 @@ impl<'a> Font<'a> {
             let hmtx: HMTX = self.get_table()?;
             hmtx.metrics_for_glyph(glyph_id)
         };
-        let (top_bearing, vert_advance) = {
-            self.get_table()
-                .map(|vmtx: VMTX| vmtx.metrics_for_glyph(glyph_id))
-                .map(|vm| (vm.top_bearing, vm.advance_height))
-                .unwrap_or((0.into(), None))
-            
+        let (top_bearing, vert_advance) = if let Some(vmtx) = self.get_table() {
+            let vmtx: VMTX = vmtx;
+            let vm = vmtx.metrics_for_glyph(glyph_id);
+            (vm.top_bearing, vm.advance_height)
+        } else {
+            (height + shift[1].map(|s| s as i16), None)
         };
 
         let placement_metrics = GlyphPlacementMetrics {

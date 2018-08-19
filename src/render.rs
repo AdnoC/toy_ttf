@@ -90,7 +90,7 @@ pub mod compositor {
                 .map(|ha| ha.max(left_bearing + glyph_bmp.width()));
             let vert_advance = placement_metrics.vert_advance
                 .map(|va| self.scale_fu(va) as u32)
-                .map(|va| va.max(top_bearing + glyph_bmp.height()));
+                .map(|va| va.max(glyph_bmp.height() - top_bearing));
 
             match &self.text_direction {
                 Left => {
