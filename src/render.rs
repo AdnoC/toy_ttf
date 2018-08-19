@@ -14,6 +14,13 @@ pub mod compositor {
     use tables::hhea::HHEA;
     use parse::primitives::FontUnit;
 
+    fn draw_baseline(img: &mut GrayImage, y: u32) { // DBG
+        use image::Luma;
+        for x in 0..(img.width()) {
+            img.put_pixel(x, y, Luma { data: [255/2] });
+        }
+    }
+
     #[derive(Debug)]
     pub struct TextRenderMetrics {
         /// Distance from baseline to highest grid coordinate to place an outline point.
@@ -48,9 +55,9 @@ pub mod compositor {
     impl RenderedText {
         pub fn new_horizontal<'a>(render_metrics: TextRenderMetrics, point_size: usize,
                                   units_per_em: u16, text_direction: TextDirection) -> RenderedText {
-            let ascent =  render_metrics.ascent.to_pixels(units_per_em, point_size) as i16;
-            let descent = render_metrics.descent.to_pixels(units_per_em, point_size) as i16;
-            let line_gap = render_metrics.line_gap.to_pixels(units_per_em, point_size) as i16;
+            let ascent =  render_metrics.ascent.to_pixels(units_per_em, point_size).round() as i16;
+            let descent = render_metrics.descent.to_pixels(units_per_em, point_size).round() as i16;
+            let line_gap = render_metrics.line_gap.to_pixels(units_per_em, point_size).round() as i16;
             let single_line_height = ascent - descent;
             RenderedText {
                 img: GrayImage::new(0, single_line_height as u32),
@@ -92,6 +99,12 @@ pub mod compositor {
                 .map(|va| self.scale_fu(va) as u32)
                 .map(|va| va.max(glyph_bmp.height() - top_bearing));
 
+            println!("bmp_dims: {:?}, advances: {:?}\tbearings: {:?}",
+                     glyph_bmp.dimensions(),
+                     (horiz_advance, vert_advance),
+                     (left_bearing, top_bearing));
+            println!("pen: {:?}", (self.pen_x, self.pen_y));
+
             match &self.text_direction {
                 Left => {
                     self.pen_x = self.pen_x.wrapping_sub(horiz_advance.unwrap_or(0));
@@ -101,7 +114,6 @@ pub mod compositor {
                 },
                 _ => (),
             }
-
 
             let (place_x, place_y) = match &self.text_direction {
                 Left | Right => {
@@ -114,11 +126,6 @@ pub mod compositor {
                 }
             };
 
-            println!("bmp_dims: {:?}, advances: {:?}\tbearings: {:?}",
-                     glyph_bmp.dimensions(),
-                     (horiz_advance, vert_advance),
-                     (left_bearing, top_bearing));
-
             let (width, height) = self.img.dimensions();
             assert!(horiz_advance.is_none() || horiz_advance.unwrap() >= glyph_bmp.width() + left_bearing);
             assert!(vert_advance.is_none() || vert_advance.unwrap() >= glyph_bmp.height() + top_bearing);
@@ -126,7 +133,7 @@ pub mod compositor {
             let width = width.max(self.pen_x + horiz_advance.unwrap_or(
                     glyph_bmp.width() + left_bearing));
             let height = height.max(self.pen_y + vert_advance.unwrap_or(
-                    glyph_bmp.height() - top_bearing));
+                    (glyph_bmp.height() as i32 - top_bearing as i32).abs() as u32));
 
             let mut new_img = GrayImage::new(width, height);
 
@@ -150,6 +157,8 @@ pub mod compositor {
             self.pen_y += vert_advance.unwrap_or(0);
 
             self.img = new_img;
+
+            draw_baseline(&mut self.img, self.pen_y);
         }
         pub fn newline(&mut self) {
             use image::GenericImage;
@@ -177,6 +186,8 @@ pub mod compositor {
             self.pen_x = 0;
             self.pen_y += b2b_dist;
             self.img = new_img;
+
+            draw_baseline(&mut self.img, self.pen_y);
         }
 
         fn baseline_to_baseline_dist(&self) -> u32 {
@@ -234,7 +245,7 @@ pub mod compositor {
             $(
                 impl FromF32 for $prim {
                     fn from_f32(val: f32) -> $prim {
-                        val.ceil() as $prim
+                        val.floor() as $prim
                     }
                 }
              )*

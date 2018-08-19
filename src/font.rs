@@ -177,7 +177,8 @@ impl<'a> Font<'a> {
             let vm = vmtx.metrics_for_glyph(glyph_id);
             (vm.top_bearing, vm.advance_height)
         } else {
-            (height + shift[1].map(|s| s as i16), None)
+            println!("h: {:?}\tshft: {:?}", height, shift[1]);
+            (height - shift[1].map(|s| s.floor() as i16), None)
         };
 
         let placement_metrics = GlyphPlacementMetrics {

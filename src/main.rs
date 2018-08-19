@@ -56,8 +56,8 @@ fn main() {
 
         let mut rend_txt = RenderedText::new_left_to_right(rend_met, size, head.units_per_em);
 
-        let first_msg = "H";
-        let second_msg = "W";
+        let first_msg = "Hello,";
+        let second_msg = "World!";
 
         for ch in first_msg.chars() {
             let glyph = font.get_glyph(ch).unwrap();
