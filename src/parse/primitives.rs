@@ -3,9 +3,38 @@ use parse::Parse;
 use std::marker::PhantomData;
 
 use font::Font;
-/// A quantity in Font Units
-#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone, Copy)]
-pub struct FontUnit<T>(T);
+macro_rules! newtype_unit_wrapper {
+    ($(#[$attr:meta])* unit $name:ident) => {
+        newtype_unit_wrapper!($(#[$attr])* () unit $name);
+    };
+    ($(#[$attr:meta])* pub unit $name:ident) => {
+        newtype_unit_wrapper!($(#[$attr])* (pub) unit $name);
+    };
+    ($(#[$attr:meta])* ($($vis:tt)*) unit $name:ident) => {
+        $(#[$attr])*
+        #[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone, Copy)]
+        $($vis)* struct $name<T>(pub T);
+        impl<'a, T: Parse<'a>> Parse<'a> for $name<T> {
+            fn approx_file_size() -> usize {
+                T::approx_file_size()
+            }
+            fn parse(buf: &'a [u8]) -> (&'a [u8], Self) {
+                let (buf, val) = T::parse(buf);
+                (buf, $name(val))
+            }
+        }
+        impl<T> From<T> for $name<T> {
+            fn from(val: T) -> Self {
+                $name(val)
+            }
+        }
+    }
+}
+
+newtype_unit_wrapper!(
+    /// A quantity in Font Units
+    pub unit FontUnit);
+
 impl<T: Into<f32>> FontUnit< T> {
     fn funits_to_pixels_rat<'a>(units_per_em: u16, point_size: usize) -> f32 {
         let resolution = 72.; // dpi
@@ -25,49 +54,13 @@ impl<T: Into<f32>> FontUnit< T> {
         self.to_pixels(head.units_per_em, point_size)
     }
 }
-impl<'a, T: Parse<'a>> Parse<'a> for FontUnit<T> {
-    fn approx_file_size() -> usize {
-        T::approx_file_size()
-    }
-    fn parse(buf: &'a [u8]) -> (&'a [u8], Self) {
-        let (buf, val) = T::parse(buf);
-        (buf, FontUnit(val))
-    }
-}
-impl<T> From<T> for FontUnit<T> {
-    fn from(val: T) -> Self {
-        FontUnit(val)
-    }
-}
-
-macro_rules! newtype_unit_wrapper {
-    ($(#[$attr:meta])* $name:ident) => {
-        $(#[$attr])*
-        #[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone, Copy)]
-        pub struct $name<T>(T);
-        impl<'a, T: Parse<'a>> Parse<'a> for $name<T> {
-            fn approx_file_size() -> usize {
-                T::approx_file_size()
-            }
-            fn parse(buf: &'a [u8]) -> (&'a [u8], Self) {
-                let (buf, val) = T::parse(buf);
-                (buf, $name(val))
-            }
-        }
-        impl<T> From<T> for $name<T> {
-            fn from(val: T) -> Self {
-                $name(val)
-            }
-        }
-    }
-}
 
 newtype_unit_wrapper!(
     /// Wrapper for values in `em`
-    Em);
+    pub unit Em);
 newtype_unit_wrapper!(
     /// One-twentieth of a point (1440 per inch)
-    TWIP);
+    pub unit TWIP);
 
 pub type ShortFrac = i16;
 pub type FWord = FontUnit<i16>;

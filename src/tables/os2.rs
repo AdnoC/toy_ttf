@@ -7,8 +7,8 @@ use tables::{PrimaryTable, TableTag};
 pub struct OS2<'a> {
     /// table version number
     version: u16,
-    base_table: Version0Ext,
-    v4_table: Version4Ext,
+    pub base_table: Version0Ext,
+    pub v4_table: Version4Ext,
     v5_table: BufView<'a, u8>,
 }
 
@@ -108,13 +108,13 @@ pub struct Version0Ext {
 pub struct Version4Ext {
     /// The typographic ascender for this font.
     /// This is not necessarily the same as the ascender value in the 'hhea' table.
-    s_typo_ascender: FontUnit<i16>,
+    pub s_typo_ascender: FontUnit<i16>,
     /// The typographic descender for this font.
     /// This is not necessarily the same as the descender value in the 'hhea' table.
-    s_typo_descender: FontUnit<i16>,
+    pub s_typo_descender: FontUnit<i16>,
     /// The typographic line gap for this font.
     /// This is not necessarily the same as the line gap value in the 'hhea' table.
-    s_typo_line_gap: FontUnit<FontUnit<i16>>,
+    pub s_typo_line_gap: FontUnit<i16>,
     /// The ascender metric for Windows. usWinAscent is computed as the yMax
     /// for all characters in the Windows ANSI character set.
     us_win_ascent: FontUnit<u16>,
