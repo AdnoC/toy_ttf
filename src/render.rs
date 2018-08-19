@@ -13,6 +13,17 @@ pub mod compositor {
     use image::GrayImage;
     use tables::hhea::HHEA;
     use parse::primitives::FontUnit;
+
+    #[derive(Debug)]
+    pub struct TextRenderMetrics {
+        /// Distance from baseline to highest grid coordinate to place an outline point.
+        pub ascent: FontUnit<i16>,
+        /// Distance from baseline to lowest grid coordinate to place an outline point.
+        pub descent: FontUnit<i16>,
+        /// Distance that must be placed between two lines of text.
+        pub line_gap: FontUnit<i16>,
+    }
+
     /// Abstraction over a string of text to render, who's characters have been
     /// turned into bitmaps.
     pub struct RenderedText {
@@ -23,8 +34,10 @@ pub mod compositor {
         descent: i16,
         /// Distance that must be placed between two lines of text.
         line_gap: i16,
-        /// y-coordinate of the current baseline.
-        current_baseline_y: u32,
+        /// x-coordinate of the "pen". Right is positive
+        pen_x: u32,
+        /// y-coordinate of the "pen". Down is positive
+        pen_y: u32,
         /// What direction are we writing the text?
         text_direction: TextDirection,
         /// How big to render things
@@ -33,14 +46,21 @@ pub mod compositor {
     }
 
     impl RenderedText {
-        pub fn new_horizontal<'a>(horiz_header: &HHEA<'a>, point_size: usize,
+        pub fn new_horizontal<'a>(render_metrics: TextRenderMetrics, point_size: usize,
                                   units_per_em: u16, text_direction: TextDirection) -> RenderedText {
+            let ascent =  render_metrics.ascent.to_pixels(units_per_em, point_size) as i16;
+            let descent = render_metrics.descent.to_pixels(units_per_em, point_size) as i16;
+            let line_gap = render_metrics.line_gap.to_pixels(units_per_em, point_size) as i16;
+            let single_line_height = ascent - descent;
             RenderedText {
-                img: GrayImage::new(0, 0),
-                ascent: horiz_header.ascent.to_pixels(units_per_em, point_size) as i16,
-                descent: horiz_header.descent.to_pixels(units_per_em, point_size) as i16,
-                line_gap: horiz_header.line_gap.to_pixels(units_per_em, point_size) as i16,
-                current_baseline_y: 0,
+                img: GrayImage::new(0, single_line_height as u32),
+                ascent,
+                descent,
+                line_gap,
+                pen_x: 0,
+                // Ensures that we don't have to worry about exending the string's
+                // bitmap upward, just downward on newline
+                pen_y: ascent as u32, // `ascent` should be a positive value
                 text_direction,
                 point_size,
                 units_per_em,
@@ -48,16 +68,115 @@ pub mod compositor {
 
         }
 
-        pub fn new_left_to_right<'a>(horiz_header: &HHEA<'a>, point_size: usize,
+        pub fn new_left_to_right<'a>(render_metrics: TextRenderMetrics, point_size: usize,
                                      units_per_em: u16) -> RenderedText {
-            Self::new_horizontal(horiz_header, point_size, units_per_em, TextDirection::Right)
+            Self::new_horizontal(render_metrics, point_size, units_per_em, TextDirection::Right)
         }
 
         pub fn add_glyph(&mut self, glyph_bmp: GrayImage, placement_metrics: GlyphPlacementMetrics) {
-            unimplemented!()
+            use image::{GenericImage, imageops::flip_vertical};
+            use self::TextDirection::{Left, Right, Up, Down};
+            let glyph_bmp = flip_vertical(&glyph_bmp);
+        // pub shift: [FontUnit<f32>; 2],
+        // pub left_bearing: FontUnit<i16>,
+        // pub top_bearing: FontUnit<i16>,
+        // pub horiz_advance: Option<FontUnit<u16>>,
+        // pub vert_advance: Option<FontUnit<u16>>,
+            let horiz_advance = placement_metrics.horiz_advance
+                .map(|ha| self.scale_fu(ha) as u32);
+            let vert_advance = placement_metrics.vert_advance
+                .map(|va| self.scale_fu(va) as u32);
+
+            match &self.text_direction {
+                Left => {
+                    self.pen_x = self.pen_x.wrapping_sub(horiz_advance.unwrap_or(0));
+                },
+                Up => {
+                    unimplemented!()
+                },
+                _ => (),
+            }
+
+            let top_bearing = self.scale_fu(placement_metrics.top_bearing) as u32;
+            let left_bearing = self.scale_fu(placement_metrics.left_bearing) as u32;
+
+            let (place_x, place_y) = match &self.text_direction {
+                Left | Right => {
+                    // Subtract top_bearing since positive is downward
+                    // and we want the top edge
+                    (self.pen_x.wrapping_add(left_bearing), self.pen_y - top_bearing)
+                },
+                Up | Down => {
+                    unimplemented!()
+                }
+            };
+
+            let (width, height) = self.img.dimensions();
+
+            let width = width.max(self.pen_x + horiz_advance.unwrap_or(glyph_bmp.width()));
+            let height = height.max(self.pen_y + vert_advance.unwrap_or(glyph_bmp.height()));
+
+            let mut new_img = GrayImage::new(width, height);
+
+            let (orig_x, orig_y) = match &self.text_direction {
+                Right => (0, 0),
+                _ => unimplemented!(),
+            };
+
+            println!("bmp_dims: {:?}, advances: {:?}\tbearings: {:?}",
+                     glyph_bmp.dimensions(),
+                     (horiz_advance, vert_advance),
+                     (left_bearing, top_bearing));
+            println!("Canvas now {:?} (from {:?})", new_img.dimensions(), self.img.dimensions());
+            println!("Placing old at {:?}", (orig_x, orig_y));
+            println!("Placing new at {:?}", (place_x, place_y));
+
+
+            new_img.copy_from(&self.img, orig_x, orig_y);
+
+            new_img.copy_from(&glyph_bmp, place_x, place_y);
+
+            // Needs to be wrapping?
+            self.pen_x += horiz_advance.unwrap_or(0);
+            self.pen_y += vert_advance.unwrap_or(0);
+
+            self.img = new_img;
         }
         pub fn newline(&mut self) {
-            unimplemented!()
+            use image::GenericImage;
+            let b2b_dist = self.baseline_to_baseline_dist();
+
+            let (width, height) = self.img.dimensions();
+            let mut new_img = GrayImage::new(width, height + b2b_dist);
+
+            let y_above_newline = self.pen_y + self.descent.abs() as u32;
+
+            {
+                let above_newline = self.img.sub_image(0, 0,
+                                                       width,
+                                                       y_above_newline);
+                new_img.copy_from(&above_newline, 0, 0);
+            }
+
+            if y_above_newline < height {
+                let below_newline = self.img.sub_image(0, y_above_newline,
+                                                       width,
+                                                       height - y_above_newline);
+                new_img.copy_from(&below_newline, 0, y_above_newline + b2b_dist);
+            }
+
+            self.pen_x = 0;
+            self.pen_y += b2b_dist;
+            self.img = new_img;
+        }
+
+        fn baseline_to_baseline_dist(&self) -> u32 {
+            (self.ascent - self.descent + self.line_gap) as u32
+        }
+
+        fn scale_fu<T: Into<f32> + FromF32>(&self, units: FontUnit<T>) -> T {
+            let pixels = units.to_pixels(self.units_per_em, self.point_size);
+            T::from_f32(pixels)
         }
     }
 
@@ -96,6 +215,26 @@ pub mod compositor {
         /// After drawing a glyph you move the "pen" this amount down
         pub vert_advance: Option<FontUnit<u16>>,
     }
+
+    trait FromF32 {
+        fn from_f32(val: f32) -> Self;
+    }
+    macro_rules! impl_from_f32 {
+        ($($prim:ty),*) => {
+            $(
+                impl FromF32 for $prim {
+                    fn from_f32(val: f32) -> $prim {
+                        val as $prim
+                    }
+                }
+             )*
+        }
+    }
+    impl_from_f32!{
+        i8, i16, i32, isize,
+        u8, u16, u32, usize
+    }
+
 }
 
 pub trait Raster {

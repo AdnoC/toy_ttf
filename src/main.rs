@@ -40,7 +40,52 @@ fn main() {
         //
     }
 
-    draw_str(&font, "Hello,_World!");
+    // draw_str(&font, "Hello,_World!");
+    // draw_str_renderedtext(&font, "Hello,_World!");
+    // draw_str_renderedtext(&font, "Hello");
+
+    {
+        use toy_ttf::render::compositor::*;
+        use toy_ttf::tables::hhea::HHEA;
+        use toy_ttf::tables::head::Head;
+
+        let rend_met = font.text_render_metrics().unwrap();
+        let head: Head = font.get_table().unwrap();
+
+        let size = 64;
+
+        let mut rend_txt = RenderedText::new_left_to_right(rend_met, size, head.units_per_em);
+
+        let first_msg = "Hello";
+        let second_msg = "World!";
+
+        for ch in first_msg.chars() {
+            let glyph = font.get_glyph(ch).unwrap();
+
+            let ch_bitmap = font.render_glyph(glyph, size);
+            // let ch_bitmap = flip_vertical(&ch_bitmap);
+
+            let placement_metrics = font.placement_metrics(ch, size).expect("Couldn't get placement metrics");
+
+            rend_txt.add_glyph(ch_bitmap, placement_metrics);
+        }
+
+        rend_txt.newline();
+
+        for ch in second_msg.chars() {
+            let glyph = font.get_glyph(ch).unwrap();
+
+            let ch_bitmap = font.render_glyph(glyph, size);
+            // let ch_bitmap = flip_vertical(&ch_bitmap);
+
+            let placement_metrics = font.placement_metrics(ch, size).expect("Couldn't get placement metrics");
+
+            rend_txt.add_glyph(ch_bitmap, placement_metrics);
+        }
+
+        const img_file: &str = "RASTER_RESULT.bmp";
+        rend_txt.img.save(img_file).unwrap();
+    }
 }
 
 fn draw_str_renderedtext<'a>(font: &Font<'a>, text: &str) {
@@ -48,12 +93,12 @@ fn draw_str_renderedtext<'a>(font: &Font<'a>, text: &str) {
     use toy_ttf::tables::hhea::HHEA;
     use toy_ttf::tables::head::Head;
 
-    let hhea: HHEA = font.get_table().unwrap();
     let head: Head = font.get_table().unwrap();
 
+    let rend_met = font.text_render_metrics().unwrap();
     let size = 64;
 
-    let mut rend_txt = RenderedText::new_left_to_right(&hhea, size, head.units_per_em);
+    let mut rend_txt = RenderedText::new_left_to_right(rend_met, size, head.units_per_em);
 
     for ch in text.chars() {
         let glyph = font.get_glyph(ch).unwrap();
@@ -61,7 +106,7 @@ fn draw_str_renderedtext<'a>(font: &Font<'a>, text: &str) {
         let ch_bitmap = font.render_glyph(glyph, size);
         // let ch_bitmap = flip_vertical(&ch_bitmap);
 
-        let placement_metrics = font.placement_metrics(ch, size).unwrap();
+        let placement_metrics = font.placement_metrics(ch, size).expect("Couldn't get placement metrics");
 
         rend_txt.add_glyph(ch_bitmap, placement_metrics);
     }

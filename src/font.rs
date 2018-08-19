@@ -8,7 +8,7 @@ use tables::hmtx::HMTX;
 use tables::vmtx::VMTX;
 use tables::{ParseTableError, ParseTableErrorInner, PrimaryTable};
 use render::*;
-use render::compositor::{GlyphPlacementMetrics, RenderedText};
+use render::compositor::{GlyphPlacementMetrics, RenderedText, TextRenderMetrics};
 use image::GrayImage;
 use math::Affine;
 
@@ -119,16 +119,35 @@ impl<'a> Font<'a> {
         };
     }
 
+    pub fn text_render_metrics(&self) -> Option<TextRenderMetrics> {
+        use tables::os2::OS2;
+        if let Some(os2) = self.get_table() {
+            let os2: OS2 = os2;
+            let base = os2.base_table;
+
+            let trm = TextRenderMetrics {
+                ascent: base.s_typo_ascender,
+                descent: base.s_typo_descender,
+                line_gap: base.s_typo_line_gap,
+            };
+
+            println!("trm: {:#?}", trm);
+
+            return Some(trm);
+
+        }
+        unimplemented!()
+    }
+
     pub fn placement_metrics(&self, code_point: char, size: usize) -> Option<GlyphPlacementMetrics> {
         use tables::head::Head;
 
         let glyph_id = self.get_glyph_id(code_point)?;
 
+        let glyph = self.get_glyph_for_id(glyph_id)?;
+        let width: FontUnit<_> = (glyph.header.x_max - glyph.header.x_min).into();
+        let height: FontUnit<_> = (glyph.header.y_max - glyph.header.y_min).into();
         let shift = {
-            let glyph = self.get_glyph_for_id(glyph_id)?;
-
-            let width = glyph.header.x_max - glyph.header.x_min;
-            let height = glyph.header.y_max - glyph.header.y_min;
             let x_shift = -glyph.header.x_min;
             let y_shift = -glyph.header.y_min;
             let affine = Affine::translation(x_shift, y_shift);
@@ -145,17 +164,20 @@ impl<'a> Font<'a> {
             let hmtx: HMTX = self.get_table()?;
             hmtx.metrics_for_glyph(glyph_id)
         };
-        let vert_metrics = {
-            let vmtx: VMTX = self.get_table()?;
-            vmtx.metrics_for_glyph(glyph_id)
+        let (top_bearing, vert_advance) = {
+            self.get_table()
+                .map(|vmtx: VMTX| vmtx.metrics_for_glyph(glyph_id))
+                .map(|vm| (vm.top_bearing, vm.advance_height))
+                .unwrap_or((0.into(), None))
+            
         };
 
         let placement_metrics = GlyphPlacementMetrics {
             shift,
             left_bearing: horiz_metrics.left_bearing,
-            top_bearing: vert_metrics.top_bearing,
+            top_bearing,
             horiz_advance: horiz_metrics.advance_width,
-            vert_advance: vert_metrics.advance_height,
+            vert_advance,
         };
 
         Some(placement_metrics)
