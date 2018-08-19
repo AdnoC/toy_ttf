@@ -82,8 +82,16 @@ impl<'a> Font<'a> {
         let head: Head = self.get_table().unwrap();
         let scale = size as f32 / head.units_per_em as f32;
         let affine = Affine::scale(scale, scale) * affine;
-        let width = (width as f32 * scale).ceil();
-        let height = (height as f32 * scale).ceil();
+        // let width = (width as f32 * scale).ceil();
+        // let height = (height as f32 * scale).ceil();
+        let width = {
+            let w: FontUnit<_> = width.into();
+            w.to_pixels_using_font(self, size).ceil()
+        };
+        let height = {
+            let h: FontUnit<_> = height.into();
+            h.to_pixels_using_font(self, size).ceil()
+        };
 
         println!("Raster (w, h) = ({}, {})", width as u32, height as u32);
         let mut raster = FillInRaster::new(width as u32, height as u32);

@@ -82,10 +82,15 @@ pub mod compositor {
         // pub top_bearing: FontUnit<i16>,
         // pub horiz_advance: Option<FontUnit<u16>>,
         // pub vert_advance: Option<FontUnit<u16>>,
+            let top_bearing = self.scale_fu(placement_metrics.top_bearing) as u32;
+            let left_bearing = self.scale_fu(placement_metrics.left_bearing) as u32;
+
             let horiz_advance = placement_metrics.horiz_advance
-                .map(|ha| self.scale_fu(ha) as u32);
+                .map(|ha| self.scale_fu(ha) as u32)
+                .map(|ha| ha.max(left_bearing + glyph_bmp.width()));
             let vert_advance = placement_metrics.vert_advance
-                .map(|va| self.scale_fu(va) as u32);
+                .map(|va| self.scale_fu(va) as u32)
+                .map(|va| va.max(top_bearing + glyph_bmp.height()));
 
             match &self.text_direction {
                 Left => {
@@ -97,8 +102,6 @@ pub mod compositor {
                 _ => (),
             }
 
-            let top_bearing = self.scale_fu(placement_metrics.top_bearing) as u32;
-            let left_bearing = self.scale_fu(placement_metrics.left_bearing) as u32;
 
             let (place_x, place_y) = match &self.text_direction {
                 Left | Right => {
@@ -111,10 +114,19 @@ pub mod compositor {
                 }
             };
 
-            let (width, height) = self.img.dimensions();
+            println!("bmp_dims: {:?}, advances: {:?}\tbearings: {:?}",
+                     glyph_bmp.dimensions(),
+                     (horiz_advance, vert_advance),
+                     (left_bearing, top_bearing));
 
-            let width = width.max(self.pen_x + horiz_advance.unwrap_or(glyph_bmp.width()));
-            let height = height.max(self.pen_y + vert_advance.unwrap_or(glyph_bmp.height()));
+            let (width, height) = self.img.dimensions();
+            assert!(horiz_advance.is_none() || horiz_advance.unwrap() >= glyph_bmp.width() + left_bearing);
+            assert!(vert_advance.is_none() || vert_advance.unwrap() >= glyph_bmp.height() + top_bearing);
+
+            let width = width.max(self.pen_x + horiz_advance.unwrap_or(
+                    glyph_bmp.width() + left_bearing));
+            let height = height.max(self.pen_y + vert_advance.unwrap_or(
+                    glyph_bmp.height() - top_bearing));
 
             let mut new_img = GrayImage::new(width, height);
 
@@ -123,18 +135,15 @@ pub mod compositor {
                 _ => unimplemented!(),
             };
 
-            println!("bmp_dims: {:?}, advances: {:?}\tbearings: {:?}",
-                     glyph_bmp.dimensions(),
-                     (horiz_advance, vert_advance),
-                     (left_bearing, top_bearing));
             println!("Canvas now {:?} (from {:?})", new_img.dimensions(), self.img.dimensions());
             println!("Placing old at {:?}", (orig_x, orig_y));
             println!("Placing new at {:?}", (place_x, place_y));
 
 
-            new_img.copy_from(&self.img, orig_x, orig_y);
+            let cp1 = new_img.copy_from(&self.img, orig_x, orig_y);
 
-            new_img.copy_from(&glyph_bmp, place_x, place_y);
+            let cp2 = new_img.copy_from(&glyph_bmp, place_x, place_y);
+            println!("cp status: {:?}, {:?}", cp1, cp2);
 
             // Needs to be wrapping?
             self.pen_x += horiz_advance.unwrap_or(0);
@@ -199,6 +208,7 @@ pub mod compositor {
     /// * `right_bearing = placement_metrics.Advance::Width - width`
     ///
     /// * `bottom_bearing = placement_metrics.Advance::Height - height`
+    #[derive(Debug)]
     pub struct GlyphPlacementMetrics {
         /// How much `img` is shifted away from (0, 0)
         ///
@@ -224,7 +234,7 @@ pub mod compositor {
             $(
                 impl FromF32 for $prim {
                     fn from_f32(val: f32) -> $prim {
-                        val as $prim
+                        val.ceil() as $prim
                     }
                 }
              )*
