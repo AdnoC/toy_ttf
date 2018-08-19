@@ -8,7 +8,8 @@ pub struct OS2<'a> {
     /// table version number
     version: u16,
     pub base_table: Version0Ext,
-    pub v4_table: Version4Ext,
+    v1_table: BufView<'a, u8>,
+    v2_table: BufView<'a, u8>,
     v5_table: BufView<'a, u8>,
 }
 
@@ -27,27 +28,38 @@ impl<'a> Parse<'a> for OS2<'a> {
         use std::marker::PhantomData;
 
         let (buf, version) = u16::parse(buf);
-        assert!(version >= 4);
 
         let (buf, base_table) = Version0Ext::parse(buf);
-        let (buf, v4_table) = Version4Ext::parse(buf);
 
-        let (v5_buf, rest) = if version >= 5 {
+        let (v1_buf, buf) = if version >= 1 {
+            split_buf_for_len::<Version1Ext>(buf, 1)
+        } else {
+            (buf, buf)
+        };
+        let (v2_buf, buf) = if version >= 2 {
+            split_buf_for_len::<Version2Ext>(buf, 1)
+        } else {
+            (buf, buf)
+        };
+        let (v5_buf, buf) = if version >= 5 {
             split_buf_for_len::<Version5Ext>(buf, 1)
         } else {
             (buf, buf)
         };
 
+        let v1_table = BufView(v1_buf, PhantomData);
+        let v2_table = BufView(v2_buf, PhantomData);
         let v5_table = BufView(v5_buf, PhantomData);
 
         let os2 = OS2 {
             version,
             base_table,
-            v4_table,
+            v1_table,
+            v2_table,
             v5_table,
         };
 
-        (rest, os2)
+        (buf, os2)
     }
 }
 
@@ -102,10 +114,6 @@ pub struct Version0Ext {
     fs_first_char_index: u16,
     /// The maximum Unicode index in this font.
     fs_last_char_index: u16,
-}
-
-#[derive(Debug, Parse)]
-pub struct Version4Ext {
     /// The typographic ascender for this font.
     /// This is not necessarily the same as the ascender value in the 'hhea' table.
     pub s_typo_ascender: FontUnit<i16>,
@@ -121,10 +129,18 @@ pub struct Version4Ext {
     /// The descender metric for Windows. usWinDescent is computed as the -yMin
     /// for all characters in the Windows ANSI character set.
     us_win_descent: FontUnit<u16>,
+}
+
+#[derive(Debug, Parse)]
+pub struct Version1Ext {
     /// Bits 0-31
     ul_code_page_range1: u32,
     /// Bits 32-63
     ul_code_page_range2: u32,
+}
+
+#[derive(Debug, Parse)]
+pub struct Version2Ext {
     /// The distance between the baseline and the approximate height of
     /// non-ascending lowercase letters measured in FUnits.
     sx_height: FontUnit<i16>,
