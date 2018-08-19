@@ -1,4 +1,4 @@
-use parse::{DynArr, Parse};
+use parse::{DynArr, Parse, split_buf_for_len};
 use parse::primitives::FontUnit;
 use tables::{PrimaryTable, TableTag};
 
@@ -19,7 +19,7 @@ impl<'a> VMTX<'a> {
         use std::marker::PhantomData;
 
         let (vert_metric_buf, top_bearings_buf) =
-            DynArr::<LongVertMetric>::split_buf_for_len(buf, num_vert_metrics as usize);
+            split_buf_for_len::<LongVertMetric>(buf, num_vert_metrics as usize);
         let vert_metrics = DynArr(vert_metric_buf, PhantomData);
         let top_bearings = DynArr(top_bearings_buf, PhantomData);
         // assert_eq: top_bearings.len(), num_glyphs - num_vert_metrics

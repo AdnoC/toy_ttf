@@ -8,15 +8,15 @@ use font::Font;
 pub struct FontUnit<T>(T);
 impl<T: Into<f32>> FontUnit< T> {
     fn funits_to_pixels_rat<'a>(units_per_em: u16, point_size: usize) -> f32 {
-        let resolution = 72; // dpi
-        (point_size * resolution) as f32 / (72 * units_per_em) as f32
+        let resolution = 72.; // dpi
+        (point_size as f32 * resolution) / (72. * units_per_em as f32)
     }
 
     pub fn to_pixels<'a>(self, units_per_em: u16, point_size: usize) -> f32 {
         let units: f32 = self.0.into();
         units * Self::funits_to_pixels_rat(units_per_em, point_size)
     }
-    pub fn to_pixels_font<'a>(self, font: &Font<'a>, point_size: usize) -> f32 {
+    pub fn to_pixels_using_font<'a>(self, font: &Font<'a>, point_size: usize) -> f32 {
         use font::GetTable;
         use tables::head::Head;
 
@@ -39,6 +39,35 @@ impl<T> From<T> for FontUnit<T> {
         FontUnit(val)
     }
 }
+
+macro_rules! newtype_unit_wrapper {
+    ($(#[$attr:meta])* $name:ident) => {
+        $(#[$attr])*
+        #[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone, Copy)]
+        pub struct $name<T>(T);
+        impl<'a, T: Parse<'a>> Parse<'a> for $name<T> {
+            fn approx_file_size() -> usize {
+                T::approx_file_size()
+            }
+            fn parse(buf: &'a [u8]) -> (&'a [u8], Self) {
+                let (buf, val) = T::parse(buf);
+                (buf, $name(val))
+            }
+        }
+        impl<T> From<T> for $name<T> {
+            fn from(val: T) -> Self {
+                $name(val)
+            }
+        }
+    }
+}
+
+newtype_unit_wrapper!(
+    /// Wrapper for values in `em`
+    Em);
+newtype_unit_wrapper!(
+    /// One-twentieth of a point (1440 per inch)
+    TWIP);
 
 pub type ShortFrac = i16;
 pub type FWord = FontUnit<i16>;
@@ -117,6 +146,34 @@ impl_primitives! {
     i16: BigEndian::read_i16,
     i32: BigEndian::read_i32,
     i64: BigEndian::read_i64
+}
+
+macro_rules! impl_parse_arr {
+    ($([$prim:ty; $len:expr]),*) => {
+        $(
+            impl<'a> Parse<'a> for [$prim; $len] {
+                fn approx_file_size() -> usize {
+                    $len * <$prim as Parse>::approx_file_size()
+                }
+
+                fn parse(mut buf: &'a [u8]) -> (&'a [u8], Self) {
+                    let mut arr = [0; $len];
+                    for i in 0..$len {
+                        let res = <$prim as Parse>::parse(buf);
+                        buf = res.0;
+                        arr[i] = res.1;
+                    }
+                    (buf, arr)
+                }
+            }
+         )*
+    }
+}
+
+impl_parse_arr! {
+    [u8; 4],
+    [u8; 10],
+    [u32; 4]
 }
 
 macro_rules! derive_parse_from_primitive {

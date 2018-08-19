@@ -12,6 +12,12 @@ pub trait Parse<'a> {
     fn parse(buf: &'a [u8]) -> (&'a [u8], Self);
 }
 
+pub fn split_buf_for_len<'a, T: Parse<'a>>(buf: &'a[u8], len: usize) -> (&'a [u8], &'a [u8]) {
+    let idx = len * T::approx_file_size();
+    assert!(buf.len() >= idx);
+    buf.split_at(idx)
+}
+
 /// Should be considered as just a view of the file starting at some point.
 /// Does not have a defined endpoint, could go until the end of the file
 /// Typed just so that the `at` function is convenient
@@ -92,12 +98,6 @@ impl<'a, T: Parse<'a>> DynArr<'a, T> {
         let found_item = self.at(left);
         let cmp = f(&found_item);
         if cmp == Ordering::Equal { Some(found_item) } else { None }
-    }
-
-    pub fn split_buf_for_len(buf: &'a[u8], len: usize) -> (&'a [u8], &'a [u8]) {
-        let idx = len * T::approx_file_size();
-        assert!(buf.len() >= idx);
-        buf.split_at(idx)
     }
 }
 impl<'a, T: Parse<'a>> Parse<'a> for DynArr<'a, T> {

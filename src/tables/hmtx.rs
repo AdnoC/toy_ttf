@@ -1,4 +1,4 @@
-use parse::{DynArr, Parse};
+use parse::{DynArr, Parse, split_buf_for_len};
 use parse::primitives::{FWord, FontUnit};
 use tables::{PrimaryTable, TableTag};
 
@@ -19,7 +19,7 @@ impl<'a> HMTX<'a> {
         use std::marker::PhantomData;
 
         let (horiz_metric_buf, left_bearings_buf) =
-            DynArr::<LongHorizMetric>::split_buf_for_len(buf, num_horiz_metrics as usize);
+            split_buf_for_len::<LongHorizMetric>(buf, num_horiz_metrics as usize);
         let horiz_metrics = DynArr(horiz_metric_buf, PhantomData);
         let left_bearings = DynArr(left_bearings_buf, PhantomData);
         // assert_eq: left_bearings.len(), num_glyphs - num_horiz_metrics

@@ -9,6 +9,7 @@ pub mod hhea;
 pub mod hmtx;
 pub mod vhea;
 pub mod vmtx;
+pub mod os2;
 
 pub enum ParseTableErrorInner {
     TableNotFound,
@@ -84,7 +85,7 @@ pub enum TableTag {
     MaximumProfile = u32_code!(b"maxp"),
 
     // Windows
-    Compatibility = u32_code!(b"OS/2"),
+    CompatibilityMetrics = u32_code!(b"OS/2"),
 
     // Apple
     AccentAttachment = u32_code!(b"acnt"),
